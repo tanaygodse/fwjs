@@ -1,0 +1,16 @@
+var f = function(op, x, y) {
+  op(x,y);
+};
+
+var z = f(function(x,y){ x + y; }, 3, 4);
+
+print(z); // Prints 7
+
+print(null);
+z = null;
+print(z);
+
+var x = null;
+print(x);
+
+var foo = f(x + y, 5 * 6); 

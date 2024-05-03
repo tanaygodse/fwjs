@@ -1,0 +1,33 @@
+/***************
+ * Expected output:
+function() {...};
+2
+3
+***************/
+var ident = function(x) { x; };
+var two = function() { 2; };
+print(ident(two));
+print(ident(two()));
+
+var addTwo = function(x, y) {
+  x + y;
+};
+print(addTwo(1,2));
+
+var recursiveZero = function(x) {
+  if (x <= 0)
+    0;
+  else
+    recursiveZero(x - 1);
+};
+
+print(recursiveZero(5));
+
+var factorial = function(x) {
+  if (x == 1)
+    1;
+  else
+    x * factorial(x - 1);
+};
+
+print(factorial(5));
