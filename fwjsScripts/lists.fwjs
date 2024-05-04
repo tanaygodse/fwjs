@@ -4,6 +4,7 @@
 2
 55
 ********************/
+print("Before tru and fls");
 var tru = function(x,y) { x; };
 var fls = function(x,y) { y; };
 

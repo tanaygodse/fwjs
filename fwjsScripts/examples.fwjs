@@ -1,5 +1,5 @@
 var x = 0; /* Setting x to 0 */
-x = 3 + 4; // Now updating x to z
+x = 3 + 4; // Now updating x to 7
 y = true;  /* y & z are booleans */
 z = false ; y;
 print(x); // Prints 7

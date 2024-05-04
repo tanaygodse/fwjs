@@ -53,11 +53,15 @@ class PrintExpr implements Expression {
 	public PrintExpr(Expression exp) {
 		this.exp = exp;
 	}
-	public Value evaluate(Environment env) {
-		Value v = exp.evaluate(env);
-		System.out.println(v.toString());
-		return v;
-	}
+public Value evaluate(Environment env) {
+    Value val = exp.evaluate(env);
+    if (val != null) {
+        System.out.println(val.toString());
+    } else {
+        System.out.println("null");
+    }
+    return val;
+}
 }
 /**
  * Binary operators (+, -, *, etc).
@@ -138,20 +142,23 @@ class IfExpr implements Expression {
 		this.thn = thn;
 		this.els = els;
 	}
-	public Value evaluate(Environment env) {
-		Value v = cond.evaluate(env);
-		//Javascript-ish truthiness/falsiness
-		Boolean condVal  = false;
-		if (v instanceof IntVal && ((IntVal)v).toInt() != 0)
-			condVal = true;
-		else if (v instanceof BoolVal && ((BoolVal)v).toBoolean())
-			condVal = true;
-		//else if zeroes, false, or null, false.
-    System.out.println("condVal: " + condVal);
-		if (condVal) return thn.evaluate(env);
-		else if (this.els != null) return els.evaluate(env);
-		else return new NullVal();
-	}
+	
+public Value evaluate(Environment env) {
+    Value v = cond.evaluate(env);
+    if (!(v instanceof IntVal) && !(v instanceof BoolVal) && !(v instanceof NullVal)) {
+        throw new RuntimeException("If condition must evaluate to a boolean, integer, or null");
+    }
+    boolean condVal = (v instanceof BoolVal && ((BoolVal)v).toBoolean()) || 
+                      (v instanceof IntVal && ((IntVal)v).toInt() != 0);
+    if (condVal) {
+        return thn.evaluate(env);
+    } else if (this.els != null) {
+        return els.evaluate(env);
+    } else {
+        return new NullVal();
+    }
+}
+
 }
 
 /**
@@ -295,6 +302,7 @@ class FunctionAppExpr implements Expression {
         }
     }
 }
+
 //Object Get and Set property for Prototype
 class GetPropertyExpr implements Expression {
     private Expression objectExpr;

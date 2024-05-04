@@ -9,7 +9,9 @@ GRAMMAR=${GRAMMAR_NAME}.g4
 TEST_CLASSPATH=${JUNIT_JAR}:${HAMCREST_JAR}:${ANTLR_JAR}
 FWJS_SCRIPT_DIR=fwjsScripts
 SCRIPTS=closure.fwjs examples.fwjs functions.fwjs operators.fwjs test.fwjs \
-				controlStructs.fwjs factorial.fwjs lists.fwjs scoping.fwjs while.fwjs
+				controlStructs.fwjs factorial.fwjs lists.fwjs scoping.fwjs while.fwjs \
+				prototype.fwjs, print.fwjs
+SCRIPT_PROTO = prototype.fwjs
 TREES_DIR=parseTrees
 # Choosing build instead of bin to avoid conflicts with Eclipse
 BUILD_DIR=build
@@ -45,6 +47,12 @@ run:
 ${ZIP_FILE}:
 	zip ${ZIP_FILE} src/${SRC_FOLDERS}/*.java ${GRAMMAR}
 
+run_proto:
+	$(foreach script, ${SCRIPT_PROTO}, echo "Running ${FWJS_SCRIPT_DIR}/${script}"; \
+		java -cp ${BUILD_DIR}:${ANTLR_JAR} ${PACKAGE_NAME}.Interpreter ${FWJS_SCRIPT_DIR}/${script};)
+
+${ZIP_FILE}:
+	zip ${ZIP_FILE} src/${SRC_FOLDERS}/*.java ${GRAMMAR}
 clean:
 	-rm -r ${BUILD_DIR}
 

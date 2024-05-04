@@ -6,13 +6,13 @@ function() {...};
 ***************/
 var ident = function(x) { x; };
 var two = function() { 2; };
-print(ident(two));
-print(ident(two()));
+print(ident(two)); //function() {...}
+print(ident(two())); //print 2
 
 var addTwo = function(x, y) {
   x + y;
 };
-print(addTwo(1,2));
+print(addTwo(1,2)); //print 3
 
 var recursiveZero = function(x) {
   if (x <= 0)
@@ -21,7 +21,7 @@ var recursiveZero = function(x) {
     recursiveZero(x - 1);
 };
 
-print(recursiveZero(5));
+print(recursiveZero(5)); //print 0
 
 var factorial = function(x) {
   if (x == 1)
@@ -30,4 +30,4 @@ var factorial = function(x) {
     x * factorial(x - 1);
 };
 
-print(factorial(5));
+print(factorial(5)); //print 120

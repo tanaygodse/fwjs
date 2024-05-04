@@ -24,6 +24,10 @@ class ObjectVal implements Value {
 
     public void setProperty(String prop, Value val) {
         properties.put(prop, val);
+        System.out.println("setProperty: " + prop + " " + val);
+        System.out.println("properties: " + properties);
+        System.out.println("prototype: " + prototype);
+        System.out.println("this: " + this);
     }
 
     public Value getProperty(String prop) {

@@ -6,11 +6,12 @@ var z = f(function(x,y){ x + y; }, 3, 4);
 
 print(z); // Prints 7
 
-print(null);
+print(null); //Print null
 z = null;
-print(z);
+print(z); //Print null
 
 var x = null;
-print(x);
+print(x); //Print null
 
-var foo = f(x + y, 5 * 6); 
+
+//var foo = f(x + y, 5 * 6); 

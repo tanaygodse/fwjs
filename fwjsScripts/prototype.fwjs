@@ -5,7 +5,9 @@ var Person = function(name) {
 
 // Add a method to the Person prototype
 Person.prototype.sayHello = function() {
-    print("Hello, my name is " + this.name + "!");
+    print("Hello, my name is ");
+    print(this.name);
+    print("!");
 };
 
 // Create a new instance of Person
@@ -17,5 +19,7 @@ alice.sayHello(); // Should print: Hello, my name is Alice!
 bob.sayHello();   // Should print: Hello, my name is Bob!
 
 // Demonstrating prototype inheritance
-print("Alice's prototype is Person: " + (Object.getPrototypeOf(alice) === Person.prototype));  // Should print true
-print("Bob's prototype is Person: " + (Object.getPrototypeOf(bob) === Person.prototype));    // Should print true
+print("Alices prototype is Person: ");
+print(Object.getPrototypeOf(alice) === Person.prototype)// Should print true
+print("Bobs prototype is Person: ");    
+print(Object.getPrototypeOf(bob) === Person.prototype)// Should print true
