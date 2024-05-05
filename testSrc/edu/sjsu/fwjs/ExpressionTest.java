@@ -240,6 +240,7 @@ public void testPrototypeInheritanceWithSpecificProperty() {
     Expression greetBody = new PrintExpr(new ValueExpr(new StringVal("Hello, I am a human")));
     ClosureVal greetMethod = new ClosureVal(params, greetBody, env);
     human.setProperty("greet", greetMethod);
+    human.setProperty("kind", new StringVal("Mankind"));
 
     // Create 'alice' using 'human' as the prototype and set her specific 'name' property.
     ObjectVal alice = new ObjectVal(human);
@@ -267,9 +268,15 @@ public void testPrototypeInheritanceWithSpecificProperty() {
     System.out.println("outContent:");
     System.out.println(outContent.toString());
 
+    System.out.println("outContent Alice:");
+    System.out.println(alice.getProperty("kind").toString());
+
+    assertEquals(new StringVal("Mankind"), ((StringVal)alice.getProperty("kind")));
+
     // Asserts to ensure captured output contains expected texts
     String output = outContent.toString();
     assertTrue("Output should contain the greeting 'Hello, I am a human'", output.contains("Hello, I am a human"));
+
 }
 
 
