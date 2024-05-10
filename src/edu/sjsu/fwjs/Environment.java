@@ -1,86 +1,70 @@
 package edu.sjsu.fwjs;
 
 import java.util.Map;
+
 import java.util.HashMap;
 
 public class Environment {
-    private Map<String, Value> env = new HashMap<String, Value>();
+    public Map<String, Value> env = new HashMap<String, Value>();
     private Environment outerEnv;
     private static final ObjectVal globalPrototype = new ObjectVal(null); // Singleton global prototype for all objects
 
     /**
      * Constructor for global environment.
      */
-    public Environment() {
-        initializeDefaultValues();
-    }
+    public Environment() {}
 
     /**
-     * Constructor for local environment of a function.
-     */
+	 * Constructor for local environment of a function
+	 */
     public Environment(Environment outerEnv) {
         this.outerEnv = outerEnv;
     }
 
     /**
-     * Initializes the environment with default values or functions.
-     */
-    private void initializeDefaultValues() {
-        // Here you could add default functions or global variables if necessary
-    }
-
-    /**
-     * Resolves the value of a variable.
-     * Throws a RuntimeException if the variable is not found in any enclosing environment.
-     */
+	 * Handles the logic of resolving a variable.
+	 * If the variable name is in the current scope, it is returned.
+	 * Otherwise, search for the variable in the outer scope.
+	 * If we are at the outermost scope (AKA the global scope)
+	 * null is returned (similar to how JS returns undefined.
+	 */
     public Value resolveVar(String varName) {
         if (env.containsKey(varName)) {
             return env.get(varName);
-        } else if (outerEnv != null) {
+        }else if(outerEnv != null) {
             return outerEnv.resolveVar(varName);
-        } else {
+        }else{
             throw new RuntimeException("Variable '" + varName + "' is not defined.");
         }
     }
 
     /**
-     * Updates an existing variable or creates it in the global scope if it does not exist.
-     */
+	 * Used for updating existing variables.
+	 * If a variable has not been defined previously in the current scope,
+	 * or any of the function's outer scopes, the var is stored in the global scope.
+	 */
     public void updateVar(String varName, Value v) {
-        if (containsVar(varName)) {
-            Environment definingEnv = this;
-            while (!definingEnv.env.containsKey(varName)) {
-                definingEnv = definingEnv.outerEnv;
-            }
-            definingEnv.env.put(varName, v);
-        } else {
-            env.put(varName, v);
-        }
-    }
-
-    /**
-     * Checks if the variable is defined in any scope from local to global.
-     */
-    public boolean containsVar(String varName) {
-        Environment currentEnv = this;
-        while (currentEnv != null) {
-            if (currentEnv.env.containsKey(varName)) {
-                return true;
-            }
-            currentEnv = currentEnv.outerEnv;
-        }
-        return false;
+    	if (env.containsKey(varName)){
+    		env.put(varName, v);
+    	}else if (outerEnv != null) {
+    		outerEnv.updateVar(varName, v);
+    	}else
+    		env.put(varName, v);
     }
 
     /**
      * Creates a new variable in the local scope.
+     * If the variable has been defined in the current scope previously,
+     * a RuntimeException is thrown.
      */
-    public void createVar(String varName, Value v) {
-        if (env.containsKey(varName)) {
-            throw new RuntimeException("Variable '" + varName + "' already defined in this scope.");
+    public void createVar(String varName, Value v) throws RuntimeException {
+        if(!env.containsKey(varName)) {
+            env.put(varName, v);
+        } else {
+            throw new RuntimeException("Variable '" + varName + "' has already been defined in this scope.");
         }
-        env.put(varName, v);
     }
+
 
     /**
      * Retrieves the global prototype for all objects.

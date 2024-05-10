@@ -44,9 +44,6 @@ run:
 	$(foreach script, ${SCRIPTS}, echo "Running ${FWJS_SCRIPT_DIR}/${script}"; \
 		java -cp ${BUILD_DIR}:${ANTLR_JAR} ${PACKAGE_NAME}.Interpreter ${FWJS_SCRIPT_DIR}/${script};)
 
-${ZIP_FILE}:
-	zip ${ZIP_FILE} src/${SRC_FOLDERS}/*.java ${GRAMMAR}
-
 run_proto:
 	$(foreach script, ${SCRIPT_PROTO}, echo "Running ${FWJS_SCRIPT_DIR}/${script}"; \
 		java -cp ${BUILD_DIR}:${ANTLR_JAR} ${PACKAGE_NAME}.Interpreter ${FWJS_SCRIPT_DIR}/${script};)

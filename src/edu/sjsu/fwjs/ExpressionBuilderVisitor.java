@@ -196,4 +196,30 @@ public class ExpressionBuilderVisitor extends FeatherweightJavaScriptBaseVisitor
 		Expression body = visit(ctx.block());
 		return new FunctionDeclExpr(name,params,body);
 	}
+
+/* 
+  @Override
+public Expression visitPropertyAccess(FeatherweightJavaScriptParser.PropertyAccessContext ctx) {
+    Expression obj = visit(ctx.expr());
+    String prop = ctx.IDENTIFIER().getText();
+    return new GetPropertyExpr(obj, prop);
+}
+@Override
+public Expression visitObjectCreation(FeatherweightJavaScriptParser.ObjectCreationContext ctx) {
+    List<Expression> args = new ArrayList<>();
+    if (ctx.arglist() != null) {
+        for (FeatherweightJavaScriptParser.ExprContext argCtx : ctx.arglist().expr()) {
+            args.add(visit(argCtx));
+        }
+    }
+    return new ObjectCreateExpr(visit(ctx.expr()), args);
+}
+@Override
+public Expression visitPropertyAssignment(FeatherweightJavaScriptParser.PropertyAssignmentContext ctx) {
+    Expression obj = visit(ctx.expr(0));
+    String prop = ctx.IDENTIFIER().getText();
+    Expression value = visit(ctx.expr(1));
+    return new SetPropertyExpr(obj, prop, value);
+}
+*/
 }

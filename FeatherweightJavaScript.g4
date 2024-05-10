@@ -1,4 +1,3 @@
-
 grammar FeatherweightJavaScript;
 
 @header { package edu.sjsu.fwjs.parser; }
@@ -27,7 +26,6 @@ PLUS: '+';
 MIN: '-';
 MOD: '%';
 SEPARATOR: ';';
-STRING_SEP: '"';
 GT: '>';
 LT: '<';
 GE: '>=';
@@ -48,38 +46,35 @@ WS: [ \t]+ -> skip; // ignore whitespace
 prog: stat+;
 
 stat:
-    expr SEPARATOR                              # bareExpr
-    | IF '(' expr ')' block ELSE block          # ifThenElse
-    | IF '(' expr ')' block                     # ifThen
-    | WHILE '(' expr ')' block                  # while
-    | PRINT '(' expr ')'                        # print
-    | SEPARATOR                                 # blankExpr;
+	expr SEPARATOR										# bareExpr
+	| IF '(' expr ')' block ELSE block					# ifThenElse
+	| IF '(' expr ')' block								# ifThen
+	| WHILE '(' expr ')' block							# while
+	| PRINT '(' expr ')' SEPARATOR						# print
+	| SEPARATOR											# blankExpr;
 
 expr:
-    '(' expr ')'                                # parens
-    | expr '(' arglist? ')'                     # functionCall
-    | expr op=('*' | '/' | '%') expr            # MulDivMod
-    | expr op=('+' | '-') expr                  # AddSub
-    | expr op=('<' | '<=' | '>' | '>=' | '==') expr # Comparisons
-    | FUNCTION IDENTIFIER '(' idlist? ')' block # functionDeclaration
-    | FUNCTION '(' idlist? ')' block            # anonFunctionDeclaration
-    | IDENTIFIER                                # variableReference
-    | VAR IDENTIFIER '=' expr                   # variableDeclaration
-    | IDENTIFIER '=' expr                       # assignmentStatement
-    | expr DOT IDENTIFIER                       # objectPropertyAccess
-    | expr DOT IDENTIFIER '=' expr              # objectPropertyAssign
-    | NEW IDENTIFIER '(' arglist? ')'           # objectCreation
-    | INT                                       # int
-    | BOOL                                      # boolean
-    | NULL                                      # null
-    | STRING                                    # string;
+	'(' expr ')'										# parens
+	| expr '(' arglist? ')'								# functionCall
+	| expr op = ('*' | '/' | '%') expr					# MulDivMod
+	| expr op = ('+' | '-') expr						# AddSub
+	| expr op = ('<' | '<=' | '>' | '>=' | '==') expr	# Comparisons
+	| FUNCTION IDENTIFIER '(' idlist? ')' block			# functionDeclaration
+	| FUNCTION '(' idlist? ')' block					# anonFunctionDeclaration
+	| IDENTIFIER										# variableReference
+	| VAR IDENTIFIER '=' expr							# variableDeclaration
+	| IDENTIFIER '=' expr								# assignmentStatement
+	| expr DOT IDENTIFIER                       		# objectPropertyAccess
+    | expr DOT IDENTIFIER '=' expr              		# objectPropertyAssign
+    | NEW IDENTIFIER '(' arglist? ')'           		# objectCreation
+    | INT                                       		# int
+    | BOOL                                      		# boolean
+    | NULL                                      		# null
+    | STRING                                    		# string;								
 
 arglist: expr (',' expr)*;
 
 idlist: IDENTIFIER (',' IDENTIFIER)*;
 
-block:
-    '{' stat* '}'                               # fullBlock
-    | stat                                      # simpBlock;
-
+block: '{' stat* '}' # fullBlock | stat # simpBlock;
 

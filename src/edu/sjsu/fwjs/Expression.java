@@ -54,13 +54,9 @@ class PrintExpr implements Expression {
 		this.exp = exp;
 	}
 public Value evaluate(Environment env) {
-    Value val = exp.evaluate(env);
-    if (val != null) {
-        System.out.println(val.toString());
-    } else {
-        System.out.println("null");
-    }
-    return val;
+    Value v = exp.evaluate(env);
+		System.out.println(v.toString());
+		return v;
 }
 }
 /**
@@ -296,7 +292,7 @@ class FunctionAppExpr implements Expression {
         if (maybeFunc instanceof ClosureVal) {
             ClosureVal func = (ClosureVal) maybeFunc;
             // Make sure to pass both the arguments and the environment
-            return func.apply(argvals, env);
+            return func.apply(argvals);
         } else {
             throw new RuntimeException("The expression does not evaluate to a function and thus cannot be applied.");
         }

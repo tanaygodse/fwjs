@@ -258,7 +258,7 @@ public void testPrototypeInheritanceWithSpecificProperty() {
     System.out.println("------Executing testPrototypeInheritanceWithSpecificProperty------");
 
     // Execute the inherited greet method
-    aliceGreetMethod.apply(new ArrayList<>(), new Environment()); // Apply with empty args and new environment
+    aliceGreetMethod.apply(new ArrayList<>()); // Apply with empty args and new environment
 
     // Reset System.out back to its original setting
     System.out.println("originalOut: ");

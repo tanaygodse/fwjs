@@ -1,1 +1,3 @@
-print("xyz");
+print(123);
+print(null);
+print("1234");

@@ -9,7 +9,6 @@ import java.util.Map;
  * Evaluating a FWJS expression should return a FWJS value.
  */
 public interface Value {}
-
 /**
  * Object value to represent JavaScript objects and support prototypical inheritance.
  */
@@ -55,6 +54,7 @@ class ObjectVal implements Value {
         return "Object with properties: " + properties.keySet();
     }
 }
+
 
 /**
  * Boolean values.
@@ -115,12 +115,12 @@ class NullVal implements Value {
 class ClosureVal implements Value {
     private List<String> params;
     private Expression body;
-    private Environment closureEnv;
+    private Environment outerEnv;
 
     public ClosureVal(List<String> params, Expression body, Environment env) {
         this.params = params;
         this.body = body;
-        this.closureEnv = env;
+        this.outerEnv = env;
     }
 
     /**
@@ -130,13 +130,13 @@ class ClosureVal implements Value {
      * @param env The environment in which to evaluate the function.
      * @return The result of evaluating the function.
      */
-    public Value apply(List<Value> argVals, Environment env) {
-        Environment localEnv = new Environment(env);
-        for (int i = 0; i < params.size(); i++) {
-            Value argVal = (i < argVals.size()) ? argVals.get(i) : new NullVal();
-            localEnv.createVar(params.get(i), argVal);
+    public Value apply(List<Value> argVals) {
+        Environment env = new Environment(this.outerEnv);
+        for(int i = 0; i < params.size(); i++) {
+            env.createVar(params.get(i), argVals.get(i));
         }
-        return body.evaluate(localEnv);
+
+        return this.body.evaluate(env);
     }
 
     @Override
@@ -171,4 +171,5 @@ class StringVal implements Value {
     public String toString() {
         return this.strVal;
     }
+    
 }
