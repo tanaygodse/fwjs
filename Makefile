@@ -10,7 +10,7 @@ TEST_CLASSPATH=${JUNIT_JAR}:${HAMCREST_JAR}:${ANTLR_JAR}
 FWJS_SCRIPT_DIR=fwjsScripts
 SCRIPTS=closure.fwjs examples.fwjs functions.fwjs operators.fwjs test.fwjs \
 				controlStructs.fwjs factorial.fwjs lists.fwjs scoping.fwjs while.fwjs \
-				prototype.fwjs, print.fwjs
+				print.fwjs prototype.fwjs
 SCRIPT_PROTO = prototype.fwjs
 TREES_DIR=parseTrees
 # Choosing build instead of bin to avoid conflicts with Eclipse

@@ -1,3 +1,5 @@
 print(123);
 print(null);
 print("1234");
+var x = "Variable x";
+print(x);
