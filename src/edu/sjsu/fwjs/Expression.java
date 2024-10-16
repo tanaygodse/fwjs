@@ -395,7 +395,7 @@ class ImportExpr implements Expression {
       try {
         String path = fileName;
         if (!path.endsWith(".fwjs")) {
-            path += ".fwjs"; // Assuming .fwjs extension for the source file
+            path += ".fwjs";
         }
         // Construct the full path relative to basePath
         File file = new File(basePath, path);
@@ -408,7 +408,7 @@ class ImportExpr implements Expression {
 
         // Update the basePath for the imported file's directory
         String newBasePath = file.getParent();
-        ExpressionBuilderVisitor builder = new ExpressionBuilderVisitor(newBasePath); // Corrected line
+        ExpressionBuilderVisitor builder = new ExpressionBuilderVisitor(newBasePath);
 
         Expression prog = builder.visit(tree);
 
