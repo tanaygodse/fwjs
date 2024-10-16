@@ -10,8 +10,9 @@ TEST_CLASSPATH=${JUNIT_JAR}:${HAMCREST_JAR}:${ANTLR_JAR}
 FWJS_SCRIPT_DIR=fwjsScripts
 SCRIPTS=closure.fwjs examples.fwjs functions.fwjs operators.fwjs test.fwjs \
 				controlStructs.fwjs factorial.fwjs lists.fwjs scoping.fwjs while.fwjs \
-				print.fwjs prototype.fwjs
+				print.fwjs prototype.fwjs objects.fwjs test_proto.fwjs fileio.fwjs import.fwjs
 SCRIPT_PROTO = prototype.fwjs
+SCRIPT_CLOSURE = closure.fwjs
 TREES_DIR=parseTrees
 # Choosing build instead of bin to avoid conflicts with Eclipse
 BUILD_DIR=build
@@ -48,8 +49,13 @@ run_proto:
 	$(foreach script, ${SCRIPT_PROTO}, echo "Running ${FWJS_SCRIPT_DIR}/${script}"; \
 		java -cp ${BUILD_DIR}:${ANTLR_JAR} ${PACKAGE_NAME}.Interpreter ${FWJS_SCRIPT_DIR}/${script};)
 
+run_closure:
+	$(foreach script, ${SCRIPT_CLOSURE}, echo "Running ${FWJS_SCRIPT_DIR}/${script}"; \
+		java -cp ${BUILD_DIR}:${ANTLR_JAR} ${PACKAGE_NAME}.Interpreter ${FWJS_SCRIPT_DIR}/${script};)
+
 ${ZIP_FILE}:
-	zip ${ZIP_FILE} src/${SRC_FOLDERS}/*.java ${GRAMMAR}
+	zip ${ZIP_FILE} src/${SRC_FOLDERS}/*.java ${GRAMMAR} 
+	$(foreach script, ${SCRIPTS}, ${FWJS_SCRIPT_DIR}/${script};)
 clean:
 	-rm -r ${BUILD_DIR}
 

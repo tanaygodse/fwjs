@@ -1,0 +1,4 @@
+// main.fwjs
+import "module.fwjs";
+foo();
+

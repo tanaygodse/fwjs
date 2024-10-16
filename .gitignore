@@ -1,0 +1,16 @@
+# macOS system files
+.DS_Store
+
+# Build artifacts and generated sources
+build/
+generatedSrc/
+
+# IntelliJ IDEA files (optional, depending on your IDE)
+.idea/
+*.iml
+
+# Inputs and outputs
+input.txt
+CS252-TanayGodse-solution.zip
+solution/
+

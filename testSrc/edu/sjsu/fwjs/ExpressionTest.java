@@ -4,10 +4,14 @@ import static org.junit.Assert.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Arrays;
 
 import org.junit.Test;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.io.IOException;
 
 public class ExpressionTest {
 
@@ -301,5 +305,225 @@ public void testPrototypeInheritanceWithSpecificProperty() {
         // Clean up by resetting System.out
         System.setOut(System.out);
     }
+@Test
+public void testFileRead() throws IOException {
+    // Setup the test by writing a file to be read
+    String filePath = "test_input.txt";
+    String fileContent = "This is a test file.";
+    Files.write(Paths.get(filePath), fileContent.getBytes());
 
+    // Create an environment and add the FileIOCapability
+    Environment env = new Environment();
+    Value fileIOCap = new FileIOCapability();
+    env.createVar("fileIO", fileIOCap);
+
+    // Create the expression to read the file using FileIOCapability
+    Expression fileReadExpr = new FunctionAppExpr(
+        new GetPropertyExpr(new VarExpr("fileIO"), "readFile"),
+        Arrays.asList(new ValueExpr(new StringVal(filePath))) // Use Arrays.asList()
+    );
+
+    // Evaluate the expression
+    StringVal result = (StringVal) fileReadExpr.evaluate(env);
+
+    // Check if the result matches the file content
+    assertEquals(new StringVal(fileContent), result);
+
+    // Clean up the file
+    Files.delete(Paths.get(filePath));
+}
+
+@Test
+public void testFileWrite() throws IOException {
+    // Setup the test file path and content
+    String filePath = "test_output.txt";
+    String fileContent = "Writing to a test file.";
+
+    // Create an environment and add the FileIOCapability
+    Environment env = new Environment();
+    Value fileIOCap = new FileIOCapability();
+    env.createVar("fileIO", fileIOCap);
+
+    // Create the expression to write to the file using FileIOCapability
+    Expression fileWriteExpr = new FunctionAppExpr(
+        new GetPropertyExpr(new VarExpr("fileIO"), "writeFile"),
+        Arrays.asList(new ValueExpr(new StringVal(filePath)), new ValueExpr(new StringVal(fileContent))) // Use Arrays.asList()
+    );
+
+    // Evaluate the expression (write the file)
+    fileWriteExpr.evaluate(env);
+
+    // Read the file and check if the content matches
+    String result = new String(Files.readAllBytes(Paths.get(filePath)));
+    assertEquals(fileContent, result);
+
+    // Clean up the file
+    Files.delete(Paths.get(filePath));
+}
+
+@Test
+public void testFileReadAndWrite() throws IOException {
+    // Setup the test file paths and content
+    String inputFilePath = "test_input.txt";
+    String outputFilePath = "test_output.txt";
+    String fileContent = "This is the content to be copied.";
+
+    // Write content to the input file
+    Files.write(Paths.get(inputFilePath), fileContent.getBytes());
+
+    // Create an environment and add the FileIOCapability
+    Environment env = new Environment();
+    Value fileIOCap = new FileIOCapability();
+    env.createVar("fileIO", fileIOCap);
+
+    // Create the expression to read the input file and write to the output file
+    Expression fileReadExpr = new FunctionAppExpr(
+        new GetPropertyExpr(new VarExpr("fileIO"), "readFile"),
+        Arrays.asList(new ValueExpr(new StringVal(inputFilePath))) // Use Arrays.asList()
+    );
+
+    Expression fileWriteExpr = new FunctionAppExpr(
+        new GetPropertyExpr(new VarExpr("fileIO"), "writeFile"),
+        Arrays.asList(new ValueExpr(new StringVal(outputFilePath)), fileReadExpr) // Use Arrays.asList()
+    );
+
+    // Evaluate the expression (read and then write the file)
+    fileWriteExpr.evaluate(env);
+
+    // Check if the output file has the same content as the input file
+    String result = new String(Files.readAllBytes(Paths.get(outputFilePath)));
+    assertEquals(fileContent, result);
+
+    // Clean up the files
+    Files.delete(Paths.get(inputFilePath));
+    Files.delete(Paths.get(outputFilePath));
+}
+
+@Test(expected = RuntimeException.class)
+public void testFileWriteWithoutCapability() throws IOException {
+    // Setup the test file path and content
+    String filePath = "test_output.txt";
+    String fileContent = "This write should not be allowed.";
+
+    // Create an environment **without** adding the FileIOCapability
+    Environment env = new Environment();
+
+    // Try to create the expression to write to the file (without the capability)
+    Expression fileWriteExpr = new FunctionAppExpr(
+        new GetPropertyExpr(new VarExpr("fileIO"), "writeFile"), // Try to access 'fileIO' which does not exist
+        Arrays.asList(new ValueExpr(new StringVal(filePath)), new ValueExpr(new StringVal(fileContent))) // Use Arrays.asList()
+    );
+
+    // Evaluate the expression (this should fail and throw an exception)
+    fileWriteExpr.evaluate(env);
+
+    // The test should expect a RuntimeException because 'fileIO' is not available in the environment
+}
+
+
+@Test
+public void testNetworkGet() throws IOException {
+    // Mock URL for the GET request
+    String mockUrl = "http://httpbin.org/get";
+
+    // Create an environment and add the NetworkIOCapability
+    Environment env = new Environment();
+    Value networkIOCap = new NetworkIOCapability();
+    env.createVar("networkIO", networkIOCap);
+
+    // Create the expression to perform a GET request using NetworkIOCapability
+    Expression networkGetExpr = new FunctionAppExpr(
+        new GetPropertyExpr(new VarExpr("networkIO"), "get"),
+        Arrays.asList(new ValueExpr(new StringVal(mockUrl))) // Use Arrays.asList()
+    );
+
+    // Evaluate the expression (perform the GET request)
+    StringVal result = (StringVal) networkGetExpr.evaluate(env);
+
+    // Print result for debugging
+    System.out.println("GET response: " + result.toString());
+
+    // Assert that the response contains the expected URL field
+    assertTrue("Response should contain the requested URL",
+            result.toString().contains("\"url\": \"http://httpbin.org/get\""));
+}
+
+
+
+@Test
+public void testNetworkPost() throws IOException {
+    // Mock URL and request data for the POST request
+    String mockUrl = "http://httpbin.org/post";
+    String postData = "{\"name\":\"John\", \"age\":30}"; // Example JSON data
+
+    // Create an environment and add the NetworkIOCapability
+    Environment env = new Environment();
+    Value networkIOCap = new NetworkIOCapability();
+    env.createVar("networkIO", networkIOCap);
+
+    // Create the expression to perform a POST request using NetworkIOCapability
+    Expression networkPostExpr = new FunctionAppExpr(
+        new GetPropertyExpr(new VarExpr("networkIO"), "post"),
+        Arrays.asList(new ValueExpr(new StringVal(mockUrl)), new ValueExpr(new StringVal(postData))) // Use Arrays.asList()
+    );
+
+    // Evaluate the expression (perform the POST request)
+    StringVal result = (StringVal) networkPostExpr.evaluate(env);
+
+    // Print result for debugging
+    System.out.println("POST response: " + result.toString());
+
+    // Assert that the response contains the sent data in the json field
+    String response = result.toString();
+
+    // Check that the json section has the expected values
+    assertTrue("Response should contain the name field inside json", response.contains("\"name\": \"John\""));
+    assertTrue("Response should contain the age field inside json", response.contains("\"age\": 30"));
+}
+
+
+
+@Test(expected = RuntimeException.class)
+public void testNetworkPostWithoutCapability() throws IOException {
+    // Setup the test URL and data for the POST request
+    String mockUrl = "http://httpbin.org/post";
+    String postData = "{\"name\":\"John\", \"age\":30}";
+
+    // Create an environment **without** adding the NetworkIOCapability
+    Environment env = new Environment();
+
+    // Try to create the expression to perform a POST request (without the capability)
+    Expression networkPostExpr = new FunctionAppExpr(
+        new GetPropertyExpr(new VarExpr("networkIO"), "post"), // Try to access 'networkIO' which does not exist
+        Arrays.asList(new ValueExpr(new StringVal(mockUrl)), new ValueExpr(new StringVal(postData))) // Use Arrays.asList()
+    );
+
+    // Evaluate the expression (this should fail and throw an exception)
+    networkPostExpr.evaluate(env);
+
+    // The test should expect a RuntimeException because 'networkIO' is not available in the environment
+}
+
+
+@Test(expected = RuntimeException.class)
+public void testNetworkGetInvalidURL() throws IOException {
+    // Invalid URL
+    String invalidUrl = "http://invalid.url/";
+
+    // Create an environment and add the NetworkIOCapability
+    Environment env = new Environment();
+    Value networkIOCap = new NetworkIOCapability();
+    env.createVar("networkIO", networkIOCap);
+
+    // Create the expression to perform a GET request using the invalid URL
+    Expression networkGetExpr = new FunctionAppExpr(
+        new GetPropertyExpr(new VarExpr("networkIO"), "get"),
+        Arrays.asList(new ValueExpr(new StringVal(invalidUrl))) // Use Arrays.asList()
+    );
+
+    // Evaluate the expression (this should fail due to the invalid URL)
+    networkGetExpr.evaluate(env);
+
+    // The test should expect a RuntimeException because the URL is invalid
+}
 }

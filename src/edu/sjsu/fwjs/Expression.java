@@ -4,7 +4,16 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 import java.util.Collections;
-
+import java.util.Set;
+import java.util.HashSet;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.CommonTokenStream;
+import edu.sjsu.fwjs.parser.FeatherweightJavaScriptLexer;
+import edu.sjsu.fwjs.parser.FeatherweightJavaScriptParser;
+import org.antlr.v4.runtime.tree.ParseTree;
 
 /**
  * FWJS expressions.
@@ -287,16 +296,20 @@ class FunctionAppExpr implements Expression {
     }
 
     public Value evaluate(Environment env) {
-        List<Value> argvals = args.stream().map(arg -> arg.evaluate(env)).collect(Collectors.toList());
-        Value maybeFunc = f.evaluate(env);
-        if (maybeFunc instanceof ClosureVal) {
-            ClosureVal func = (ClosureVal) maybeFunc;
-            // Make sure to pass both the arguments and the environment
-            return func.apply(argvals);
-        } else {
-            throw new RuntimeException("The expression does not evaluate to a function and thus cannot be applied.");
-        }
+    List<Value> argvals = args.stream().map(arg -> arg.evaluate(env)).collect(Collectors.toList());
+    Value maybeFunc = f.evaluate(env);
+    if (maybeFunc instanceof ClosureVal) {
+        ClosureVal func = (ClosureVal) maybeFunc;
+        return func.apply(argvals);
+    } else if (maybeFunc instanceof NativeFunctionVal) {
+        NativeFunctionVal nativeFunc = (NativeFunctionVal) maybeFunc;
+        return nativeFunc.apply(argvals);
+    } else {
+        System.out.println("Failed to apply function, value: " + maybeFunc);
+        throw new RuntimeException("The expression does not evaluate to a function and thus cannot be applied.");
     }
+}
+
 }
 
 //Object Get and Set property for Prototype
@@ -361,3 +374,49 @@ class ObjectCreateExpr implements Expression {
 
 	
 }
+
+class ImportExpr implements Expression {
+    private String fileName;
+    private String basePath; // New field to store base directory
+    private static Set<String> importedFiles = new HashSet<>();
+
+    public ImportExpr(String fileName, String basePath) {
+        this.fileName = fileName;
+        this.basePath = basePath;
+    }
+
+    @Override
+    public Value evaluate(Environment env) {
+      if (importedFiles.contains(fileName)) {
+        // File has already been imported, skip to prevent circular import
+        return new NullVal();
+      }
+      importedFiles.add(fileName);
+      try {
+        String path = fileName;
+        if (!path.endsWith(".fwjs")) {
+            path += ".fwjs"; // Assuming .fwjs extension for the source file
+        }
+        // Construct the full path relative to basePath
+        File file = new File(basePath, path);
+        InputStream is = new FileInputStream(file);
+        ANTLRInputStream input = new ANTLRInputStream(is);
+        FeatherweightJavaScriptLexer lexer = new FeatherweightJavaScriptLexer(input);
+        CommonTokenStream tokens = new CommonTokenStream(lexer);
+        FeatherweightJavaScriptParser parser = new FeatherweightJavaScriptParser(tokens);
+        ParseTree tree = parser.prog();  // parse the imported file
+
+        // Update the basePath for the imported file's directory
+        String newBasePath = file.getParent();
+        ExpressionBuilderVisitor builder = new ExpressionBuilderVisitor(newBasePath); // Corrected line
+
+        Expression prog = builder.visit(tree);
+
+        // Evaluate the imported file in the same environment
+        return prog.evaluate(env);
+      } catch (Exception e) {
+        throw new RuntimeException("Error importing file: " + fileName + ". Details: " + e.getMessage());
+      }
+    }
+}
+

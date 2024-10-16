@@ -1,0 +1,10 @@
+var fileContent = fileIO.readFile("input.txt");
+
+print(fileContent);
+
+var newContent = fileContent + "\nAppended line.";
+
+fileIO.writeFile("output.txt", newContent);
+
+print("File content written to output.txt");
+

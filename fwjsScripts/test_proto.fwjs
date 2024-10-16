@@ -1,0 +1,7 @@
+var Test = function(){
+  "123";
+};
+
+var x = Test();
+print(x);
+

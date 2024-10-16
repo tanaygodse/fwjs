@@ -1,0 +1,6 @@
+// module.fwjs
+var x = 10;
+function foo() {
+    print(x);
+};
+

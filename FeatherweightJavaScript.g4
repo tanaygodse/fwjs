@@ -10,6 +10,7 @@ FUNCTION: 'function';
 VAR: 'var';
 PRINT: 'print';
 NEW: 'new';
+IMPORT: 'import';
 
 // Literals
 INT: [1-9][0-9]* | '0';
@@ -17,7 +18,6 @@ BOOL: 'true' | 'false';
 NULL: 'null';
 STRING: '"' ( ~["\\] | '\\' (["\\bfnrt] | 'u' HEX HEX HEX HEX) )* '"';
 fragment HEX: [0-9a-fA-F];
-
 
 // Symbols 
 MUL: '*';
@@ -32,6 +32,12 @@ GE: '>=';
 LE: '<=';
 EQ: '==';
 DOT: '.';
+COMMA: ',';
+ASSIGN: '=';
+LPAREN: '(';
+RPAREN: ')';
+LBRACE: '{';
+RBRACE: '}';
 IDENTIFIER: [a-zA-Z_][a-zA-Z_0-9]*;
 
 // Whitespace and comments
@@ -46,35 +52,46 @@ WS: [ \t]+ -> skip; // ignore whitespace
 prog: stat+;
 
 stat:
-	expr SEPARATOR										# bareExpr
-	| IF '(' expr ')' block ELSE block					# ifThenElse
-	| IF '(' expr ')' block								# ifThen
-	| WHILE '(' expr ')' block							# while
-	| PRINT '(' expr ')' SEPARATOR						# print
-	| SEPARATOR											# blankExpr;
+    importStatement                                      # importExpr
+    | expr SEPARATOR                                     # bareExpr
+    | IF LPAREN expr RPAREN block ELSE block             # ifThenElse
+    | IF LPAREN expr RPAREN block                        # ifThen
+    | WHILE LPAREN expr RPAREN block                     # while
+    | PRINT LPAREN expr RPAREN SEPARATOR                 # print
+    | SEPARATOR                                          # blankExpr
+    ;
 
 expr:
-	'(' expr ')'										# parens
-	| expr '(' arglist? ')'								# functionCall
-	| expr op = ('*' | '/' | '%') expr					# MulDivMod
-	| expr op = ('+' | '-') expr						# AddSub
-	| expr op = ('<' | '<=' | '>' | '>=' | '==') expr	# Comparisons
-	| FUNCTION IDENTIFIER '(' idlist? ')' block			# functionDeclaration
-	| FUNCTION '(' idlist? ')' block					# anonFunctionDeclaration
-	| IDENTIFIER										# variableReference
-	| VAR IDENTIFIER '=' expr							# variableDeclaration
-	| IDENTIFIER '=' expr								# assignmentStatement
-	| expr DOT IDENTIFIER                       		# objectPropertyAccess
-    | expr DOT IDENTIFIER '=' expr              		# objectPropertyAssign
-    | NEW IDENTIFIER '(' arglist? ')'           		# objectCreation
-    | INT                                       		# int
-    | BOOL                                      		# boolean
-    | NULL                                      		# null
-    | STRING                                    		# string;								
+    LPAREN expr RPAREN                                   # parens
+    | expr LPAREN arglist? RPAREN                        # functionCall
+    | expr op=('*' | '/' | '%') expr                     # MulDivMod
+    | expr op=('+' | '-') expr                           # AddSub
+    | expr op=('<' | '<=' | '>' | '>=' | '==') expr      # Comparisons
+    | FUNCTION IDENTIFIER LPAREN idlist? RPAREN block    # functionDeclaration
+    | FUNCTION LPAREN idlist? RPAREN block               # anonFunctionDeclaration
+    | VAR IDENTIFIER ASSIGN expr                         # variableDeclaration
+    | IDENTIFIER ASSIGN expr                             # assignmentStatement
+    | IDENTIFIER                                         # variableReference
+    | NEW IDENTIFIER LPAREN arglist? RPAREN              # objectCreation
+    | expr DOT IDENTIFIER                                # objectPropertyAccess
+    | expr DOT IDENTIFIER ASSIGN expr                    # objectPropertyAssign
+    | expr DOT IDENTIFIER LPAREN arglist? RPAREN         # methodCall
+    | INT                                                # int
+    | BOOL                                               # boolean
+    | NULL                                               # null
+    | STRING                                             # string
+    ;
 
-arglist: expr (',' expr)*;
+importStatement:
+    IMPORT str=STRING SEPARATOR
+    ;
 
-idlist: IDENTIFIER (',' IDENTIFIER)*;
+arglist: expr (COMMA expr)*;
 
-block: '{' stat* '}' # fullBlock | stat # simpBlock;
+idlist: IDENTIFIER (COMMA IDENTIFIER)*;
+
+block:
+    LBRACE stat* RBRACE                                  # fullBlock
+    | stat                                               # simpBlock
+    ;
 

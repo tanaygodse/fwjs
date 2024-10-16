@@ -1,6 +1,9 @@
-var consts = {};
-//consts.PI = 3.14;
-//consts.e = 2.718;
-//print(consts.PI);
-//print(consts.e);
+var consts = { 
+  this.PI = 3,
+  this.e = 2
+};
+// consts.PI = 3.14;
+// consts.e = 2.718;
+print(consts.PI);
+print(consts.e);
 
