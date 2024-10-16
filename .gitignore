@@ -1,5 +1,6 @@
 # macOS system files
 .DS_Store
+**/.DS_Store
 
 # Directories to ignore
 .antlr/
@@ -10,4 +11,8 @@ sampleParseTrees/
 # Specific files to ignore
 project-part1.txt
 singleprint.fwjs
-
+CS252-TanayGodse-solution.zip
+build/
+generatedSrc/
+input.txt
+solution/
