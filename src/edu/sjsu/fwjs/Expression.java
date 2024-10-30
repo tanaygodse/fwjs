@@ -113,7 +113,13 @@ class BinOpExpr implements Expression {
 				throw new RuntimeException("Tried to perform arithmetic or numeric comparison with a closure.");
 		}
 		if(op.equals(Op.ADD)) {
-			return new IntVal(x + y);
+      if (vs.get(0) instanceof StringVal || vs.get(1) instanceof StringVal) {
+        String s1 = vs.get(0).toString();
+        String s2 = vs.get(1).toString();
+        return new StringVal(s1 + s2);
+      } else {
+        return new IntVal(x + y);
+      }
 		}else if(op.equals(Op.DIVIDE)) {
 			return new IntVal(x / y);
 		}else if(op.equals(Op.EQ)) {
@@ -437,6 +443,48 @@ class ImportExpr implements Expression {
       } catch (Exception e) {
         throw new RuntimeException("Error importing file: " + fileName + ". Details: " + e.getMessage());
       }
+    }
+
+}
+
+
+class MethodCallExpr implements Expression {
+    private Expression objectExpr;
+    private String methodName;
+    private List<Expression> args;
+
+    public MethodCallExpr(Expression objectExpr, String methodName, List<Expression> args) {
+        this.objectExpr = objectExpr;
+        this.methodName = methodName;
+        this.args = args;
+    }
+
+    public Value evaluate(Environment env) {
+        // Evaluate the object to get the ObjectVal
+        Value objVal = objectExpr.evaluate(env);
+        if (!(objVal instanceof ObjectVal))
+            throw new RuntimeException("Trying to call a method on a non-object.");
+        ObjectVal obj = (ObjectVal) objVal;
+
+        // Get the method property from the object
+        Value methodVal = obj.getProperty(methodName);
+        if (!(methodVal instanceof ClosureVal) && !(methodVal instanceof NativeFunctionVal))
+            throw new RuntimeException("Property " + methodName + " is not a function.");
+
+        // Evaluate the arguments
+        List<Value> argVals = args.stream().map(arg -> arg.evaluate(env)).collect(Collectors.toList());
+
+        // Call the method
+        if (methodVal instanceof ClosureVal) {
+            ClosureVal closure = (ClosureVal) methodVal;
+            // Optionally, set 'this' context if your language supports it
+            return closure.apply(argVals);
+        } else if (methodVal instanceof NativeFunctionVal) {
+            NativeFunctionVal nativeFunc = (NativeFunctionVal) methodVal;
+            return nativeFunc.apply(argVals);
+        } else {
+            throw new RuntimeException("Property " + methodName + " is not callable.");
+        }
     }
 }
 

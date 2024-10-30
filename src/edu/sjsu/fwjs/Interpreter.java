@@ -31,7 +31,6 @@ public class Interpreter {
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         FeatherweightJavaScriptParser parser = new FeatherweightJavaScriptParser(tokens);
         ParseTree tree = parser.prog(); // parse
-
         ExpressionBuilderVisitor builder = new ExpressionBuilderVisitor(basePath);
         Expression prog = builder.visit(tree);
         Environment globalEnv = new Environment();

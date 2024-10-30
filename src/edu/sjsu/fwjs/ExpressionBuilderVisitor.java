@@ -279,4 +279,19 @@ public Expression visitObjectCreation(FeatherweightJavaScriptParser.ObjectCreati
     Expression value = visit(ctx.expr(1));
     return new SetPropertyExpr(obj, prop, value);
   }
+  @Override
+  public Expression visitMethodCall(FeatherweightJavaScriptParser.MethodCallContext ctx) {
+    // Visit the object expression (e.g., fileIO)
+    Expression objExpr = visit(ctx.expr());
+    // Get the method name (e.g., readFile)
+    String methodName = ctx.IDENTIFIER().getText();
+    // Visit the arguments
+    List<Expression> args = Collections.emptyList();
+    if (ctx.arglist() != null) {
+        args = ctx.arglist().expr().stream().map(this::visit).collect(Collectors.toList());
+    }
+    // Return a MethodCallExpr
+    return new MethodCallExpr(objExpr, methodName, args);
+  }
 }
+

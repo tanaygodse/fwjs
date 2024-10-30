@@ -231,6 +231,10 @@ class FileIOCapability extends ObjectVal {
 
         // Add the 'writeFile' method
         this.setProperty("writeFile", new NativeFunctionVal(args -> {
+            System.out.println("System args 0");
+            System.out.println(args.get(0));
+            System.out.println("System args 1");
+            System.out.println(args.get(1));
             if (args.size() != 2 || !(args.get(0) instanceof StringVal) || !(args.get(1) instanceof StringVal)) {
                 throw new RuntimeException("writeFile expects two string arguments");
             }
