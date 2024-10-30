@@ -192,7 +192,6 @@ class StringVal implements Value {
     public String toString() {
         return this.strVal;
     }
-    
 }
 
 class NativeFunctionVal implements Value {

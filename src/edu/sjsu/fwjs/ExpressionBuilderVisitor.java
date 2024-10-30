@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.Collections;
+import java.util.Map;
+import java.util.HashMap;
 
 import org.antlr.v4.runtime.tree.*;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -93,11 +95,17 @@ public class ExpressionBuilderVisitor extends FeatherweightJavaScriptBaseVisitor
     return visit(ctx.expr());
   }
 
+
   @Override
   public Expression visitString(FeatherweightJavaScriptParser.StringContext ctx) {
     String str = ctx.STRING().getText();
+    // Remove the leading and trailing quotes
+    if (str.length() >= 2 && str.startsWith("\"") && str.endsWith("\"")) {
+        str = str.substring(1, str.length() - 1);
+    }
     return new ValueExpr(new StringVal(str));
   }
+
 
   @Override
   public Expression visitFullBlock(FeatherweightJavaScriptParser.FullBlockContext ctx) {
@@ -220,10 +228,34 @@ public class ExpressionBuilderVisitor extends FeatherweightJavaScriptBaseVisitor
     Expression body = visit(ctx.block());
     return new FunctionDeclExpr(name,params,body);
   }
+  
+  @Override
+  public Expression visitObjectLiteralExpr(FeatherweightJavaScriptParser.ObjectLiteralExprContext ctx) {
+    List<FeatherweightJavaScriptParser.ObjectPropertyContext> properties = ctx.objectLiteral().objectPropertyList() != null
+            ? ctx.objectLiteral().objectPropertyList().objectProperty()
+            : Collections.emptyList();
+
+    Map<String, Expression> propertyExprs = new HashMap<>();
+    for (FeatherweightJavaScriptParser.ObjectPropertyContext propCtx : properties) {
+        String key;
+        if (propCtx.IDENTIFIER() != null) {
+            key = propCtx.IDENTIFIER().getText();
+        } else {
+            // Remove quotes from string keys
+            key = propCtx.STRING().getText();
+            if (key.length() >= 2 && key.startsWith("\"") && key.endsWith("\"")) {
+                key = key.substring(1, key.length() - 1);
+            }
+        }
+        Expression valueExpr = visit(propCtx.expr());
+        propertyExprs.put(key, valueExpr);
+    }
+    return new ObjectLiteralExpr(propertyExprs);
+  }
+
   @Override
   public Expression visitObjectPropertyAccess(FeatherweightJavaScriptParser.ObjectPropertyAccessContext ctx) {
     Expression obj = visit(ctx.expr());
-    System.out.println(obj);
     String prop = ctx.IDENTIFIER().getText();
     return new GetPropertyExpr(obj, prop);
   }

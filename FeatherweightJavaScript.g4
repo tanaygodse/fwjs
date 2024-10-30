@@ -38,6 +38,7 @@ LPAREN: '(';
 RPAREN: ')';
 LBRACE: '{';
 RBRACE: '}';
+COLON: ':';
 IDENTIFIER: [a-zA-Z_][a-zA-Z_0-9]*;
 
 // Whitespace and comments
@@ -63,6 +64,7 @@ stat:
 
 expr:
     LPAREN expr RPAREN                                   # parens
+    | objectLiteral                                      # objectLiteralExpr
     | expr LPAREN arglist? RPAREN                        # functionCall
     | expr op=('*' | '/' | '%') expr                     # MulDivMod
     | expr op=('+' | '-') expr                           # AddSub
@@ -80,6 +82,18 @@ expr:
     | BOOL                                               # boolean
     | NULL                                               # null
     | STRING                                             # string
+    ;
+
+objectLiteral:
+    LBRACE objectPropertyList? RBRACE
+    ;
+
+objectPropertyList:
+    objectProperty (COMMA objectProperty)*
+    ;
+
+objectProperty:
+    (IDENTIFIER | STRING) COLON expr
     ;
 
 importStatement:

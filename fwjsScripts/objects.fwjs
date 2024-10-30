@@ -1,9 +1,15 @@
-var consts = { 
-  this.PI = 3,
-  this.e = 2
+var consts = {
+  PI: 3,
+  e: 2
 };
-// consts.PI = 3.14;
-// consts.e = 2.718;
+
+print(consts.PI);
+print(consts.e);
+
+// Optionally update the values
+consts.PI = 4;
+consts.e = 3;
+
 print(consts.PI);
 print(consts.e);
 

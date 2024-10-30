@@ -1,6 +1,8 @@
 // module.fwjs
 var x = 10;
+var y = 11;
 function foo() {
     print(x);
+    x;
 };
 

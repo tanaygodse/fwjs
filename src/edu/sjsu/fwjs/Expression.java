@@ -6,6 +6,8 @@ import java.util.stream.Collectors;
 import java.util.Collections;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.HashMap;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -349,6 +351,24 @@ class SetPropertyExpr implements Expression {
             throw new RuntimeException("Trying to set a property on a non-object.");
         ((ObjectVal) obj).setProperty(property, val);
         return val;
+    }
+}
+
+class ObjectLiteralExpr implements Expression {
+    private Map<String, Expression> properties;
+
+    public ObjectLiteralExpr(Map<String, Expression> properties) {
+        this.properties = properties;
+    }
+
+    @Override
+    public Value evaluate(Environment env) {
+        ObjectVal obj = new ObjectVal(null); // No prototype for object literals
+        for (Map.Entry<String, Expression> entry : properties.entrySet()) {
+            Value val = entry.getValue().evaluate(env);
+            obj.setProperty(entry.getKey(), val);
+        }
+        return obj;
     }
 }
 
