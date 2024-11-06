@@ -14,11 +14,17 @@ import edu.sjsu.fwjs.parser.FeatherweightJavaScriptBaseVisitor;
 import edu.sjsu.fwjs.parser.FeatherweightJavaScriptParser;
 
 public class ExpressionBuilderVisitor extends FeatherweightJavaScriptBaseVisitor<Expression> {
-  private String currentBasePath;
+    private String currentBasePath;
+    private boolean isSandboxed;
 
-  public ExpressionBuilderVisitor(String basePath) {
-    this.currentBasePath = basePath;
-  }
+    public ExpressionBuilderVisitor(String basePath, boolean isSandboxed) {
+        this.currentBasePath = basePath;
+        this.isSandboxed = isSandboxed;
+    }
+
+    public ExpressionBuilderVisitor(String basePath) {
+        this(basePath, false);
+    }
   @Override
   public Expression visitImportExpr(FeatherweightJavaScriptParser.ImportExprContext ctx) {
     String fileName = ctx.importStatement().str.getText();
@@ -141,20 +147,35 @@ public class ExpressionBuilderVisitor extends FeatherweightJavaScriptBaseVisitor
     return new VarExpr(ctx.IDENTIFIER().getSymbol().getText());
   }
 
+  @Override
   public Expression visitVariableDeclaration(FeatherweightJavaScriptParser.VariableDeclarationContext ctx) {
-    return new VarDeclExpr(ctx.IDENTIFIER().getSymbol().getText(), visit(ctx.expr()));
+    String varName = ctx.IDENTIFIER().getText();
+    Expression expr = visit(ctx.expr());
+    return new VarDeclExpr(varName, expr);
   }
 
+  @Override
   public Expression visitAssignmentStatement(FeatherweightJavaScriptParser.AssignmentStatementContext ctx) {
-    return new AssignExpr(ctx.IDENTIFIER().getSymbol().getText(), visit(ctx.expr()));
+    String varName = ctx.IDENTIFIER().getText();
+    Expression expr = visit(ctx.expr());
+    return new AssignExpr(varName, expr);
   }
 
+
+  @Override
   public Expression visitFunctionCall(FeatherweightJavaScriptParser.FunctionCallContext ctx) {
-    List<Expression> args = Collections.emptyList();
-    if (ctx.arglist() != null)
-      args = ctx.arglist().expr()
-        .stream().map(x -> visit(x)).collect(Collectors.toList());
-    return new FunctionAppExpr(visit(ctx.expr()), args);
+    Expression functionExpr = visit(ctx.expr());
+    List<Expression> args = ctx.arglist() != null
+            ? ctx.arglist().expr().stream().map(this::visit).collect(Collectors.toList())
+            : Collections.emptyList();
+
+    // Handle capabilities
+    List<String> capabilities = new ArrayList<>();
+    if (ctx.capabilityClause() != null && ctx.capabilityClause().capabilityList() != null) {
+        capabilities = ctx.capabilityClause().capabilityList().IDENTIFIER().stream()
+                .map(TerminalNode::getText).collect(Collectors.toList());
+    }
+    return new FunctionAppExpr(functionExpr, args, capabilities);
   }
 
   public Expression visitArglist(FeatherweightJavaScriptParser.ArglistContext ctx) {
@@ -211,7 +232,7 @@ public class ExpressionBuilderVisitor extends FeatherweightJavaScriptBaseVisitor
       params.add(tn.getSymbol().getText());
     }
     Expression body = visit(ctx.block());
-    return new AnonFunctionDeclExpr(params,body);
+    return new AnonFunctionDeclExpr(params, body, isSandboxed);
   }
   @Override
   public Expression visitFunctionDeclaration(FeatherweightJavaScriptParser.FunctionDeclarationContext ctx) {
@@ -226,7 +247,7 @@ public class ExpressionBuilderVisitor extends FeatherweightJavaScriptBaseVisitor
       params.add(tn.getSymbol().getText());
     }
     Expression body = visit(ctx.block());
-    return new FunctionDeclExpr(name,params,body);
+    return new FunctionDeclExpr(name, params, body, isSandboxed);
   }
   
   @Override
@@ -259,18 +280,16 @@ public class ExpressionBuilderVisitor extends FeatherweightJavaScriptBaseVisitor
     String prop = ctx.IDENTIFIER().getText();
     return new GetPropertyExpr(obj, prop);
   }
-  
-@Override
-public Expression visitObjectCreation(FeatherweightJavaScriptParser.ObjectCreationContext ctx) {
-    String id = ctx.IDENTIFIER().getText();
-    List<Expression> args = new ArrayList<>();
-    if (ctx.arglist() != null) {
-        for (ParseTree arg : ctx.arglist().children) {
-            args.add(visit(arg));
-        }
-    }
-    return new ObjectCreateExpr(null);
-}
+
+  @Override
+  public Expression visitObjectCreation(FeatherweightJavaScriptParser.ObjectCreationContext ctx) {
+    String constructorName = ctx.IDENTIFIER().getText();
+    List<Expression> args = ctx.arglist() != null
+            ? ctx.arglist().expr().stream().map(this::visit).collect(Collectors.toList())
+            : Collections.emptyList();
+    return new ObjectCreateExpr(constructorName, args);
+  }
+
 
   @Override
   public Expression visitObjectPropertyAssign(FeatherweightJavaScriptParser.ObjectPropertyAssignContext ctx) {
@@ -279,19 +298,18 @@ public Expression visitObjectCreation(FeatherweightJavaScriptParser.ObjectCreati
     Expression value = visit(ctx.expr(1));
     return new SetPropertyExpr(obj, prop, value);
   }
-  @Override
-  public Expression visitMethodCall(FeatherweightJavaScriptParser.MethodCallContext ctx) {
-    // Visit the object expression (e.g., fileIO)
+  
+  
+@Override
+public Expression visitMethodCall(FeatherweightJavaScriptParser.MethodCallContext ctx) {
     Expression objExpr = visit(ctx.expr());
-    // Get the method name (e.g., readFile)
     String methodName = ctx.IDENTIFIER().getText();
-    // Visit the arguments
-    List<Expression> args = Collections.emptyList();
-    if (ctx.arglist() != null) {
-        args = ctx.arglist().expr().stream().map(this::visit).collect(Collectors.toList());
-    }
-    // Return a MethodCallExpr
+    List<Expression> args = ctx.arglist() != null
+            ? ctx.arglist().expr().stream().map(this::visit).collect(Collectors.toList())
+            : Collections.emptyList();
     return new MethodCallExpr(objExpr, methodName, args);
-  }
+}
+
+
 }
 

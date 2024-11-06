@@ -3,17 +3,19 @@ var Person = function(name) {
     this.name = name;  // Setting a property
 };
 
+// Initialize Person.prototype as an object
+Person.prototype = {};
+
 // Add a method to the Person prototype
 Person.prototype.sayHello = function() {
-    print("Hello, my name is ");
-    print(this.name);
-    print("!");
+    print("Hello, my name is " + this.name + "!");
 };
 
-// Create a new instance of Person
+// Create new instances of Person
 var alice = new Person("Alice");
 var bob = new Person("Bob");
 
 // Call the method on the instances
 alice.sayHello(); // Should print: Hello, my name is Alice!
 bob.sayHello();   // Should print: Hello, my name is Bob!
+

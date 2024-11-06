@@ -265,60 +265,90 @@ class AssignExpr implements Expression {
  * A function declaration, which evaluates to a closure.
  */
 class AnonFunctionDeclExpr implements Expression {
-	private List<String> params;
-	private Expression body;
-	public AnonFunctionDeclExpr(List<String> params, Expression body) {
-		this.params = params;
-		this.body = body;
-	}
-	public Value evaluate(Environment env) {
-		return new ClosureVal(params, body, env);
-	}
+    private List<String> params;
+    private Expression body;
+    private boolean isSandboxed;
+
+    public AnonFunctionDeclExpr(List<String> params, Expression body, boolean isSandboxed) {
+        this.params = params;
+        this.body = body;
+        this.isSandboxed = isSandboxed;
+    }
+
+    public AnonFunctionDeclExpr(List<String> params, Expression body) {
+        this(params, body, false);
+    }
+
+    public Value evaluate(Environment env) {
+        return new ClosureVal(params, body, env, isSandboxed);
+    }
 }
 
 /**
  * A function declaration, which evaluates to a closure.
  */
 class FunctionDeclExpr implements Expression {
-	private String name;
-	private List<String> params;
-	private Expression body;
-	public FunctionDeclExpr(String name, List<String> params, Expression body) {
-		this.name = name;
-		this.params = params;
-		this.body = body;
-	}
-	public Value evaluate(Environment env) {
-		// function foo(){...} should be syntactic sugar for var foo = function(){...}
-		return (new VarDeclExpr(this.name, new ValueExpr(new ClosureVal(params, body, env)))).evaluate(env);
-	}
+    private String name;
+    private List<String> params;
+    private Expression body;
+    private boolean isSandboxed;
+
+    public FunctionDeclExpr(String name, List<String> params, Expression body, boolean isSandboxed) {
+        this.name = name;
+        this.params = params;
+        this.body = body;
+        this.isSandboxed = isSandboxed;
+    }
+
+    public FunctionDeclExpr(String name, List<String> params, Expression body) {
+        this(name, params, body, false);
+    }
+
+    public Value evaluate(Environment env) {
+        return (new VarDeclExpr(this.name, new ValueExpr(new ClosureVal(params, body, env, isSandboxed)))).evaluate(env);
+    }
 }
+
 
 class FunctionAppExpr implements Expression {
     private Expression f;
     private List<Expression> args;
+    private List<String> capabilities;
 
-    public FunctionAppExpr(Expression f, List<Expression> args) {
+    public FunctionAppExpr(Expression f, List<Expression> args, List<String> capabilities) {
         this.f = f;
         this.args = args;
+        this.capabilities = capabilities;
+    }
+
+    // Existing constructor for backward compatibility
+    public FunctionAppExpr(Expression f, List<Expression> args) {
+        this(f, args, new ArrayList<>());
     }
 
     public Value evaluate(Environment env) {
-    List<Value> argvals = args.stream().map(arg -> arg.evaluate(env)).collect(Collectors.toList());
-    Value maybeFunc = f.evaluate(env);
-    if (maybeFunc instanceof ClosureVal) {
-        ClosureVal func = (ClosureVal) maybeFunc;
-        return func.apply(argvals);
-    } else if (maybeFunc instanceof NativeFunctionVal) {
-        NativeFunctionVal nativeFunc = (NativeFunctionVal) maybeFunc;
-        return nativeFunc.apply(argvals);
-    } else {
-        System.out.println("Failed to apply function, value: " + maybeFunc);
-        throw new RuntimeException("The expression does not evaluate to a function and thus cannot be applied.");
+        List<Value> argvals = args.stream().map(arg -> arg.evaluate(env)).collect(Collectors.toList());
+        Value maybeFunc = f.evaluate(env);
+        if (maybeFunc instanceof ClosureVal) {
+            ClosureVal func = (ClosureVal) maybeFunc;
+            Environment funcEnv = new Environment(func.isSandboxed() ? null : func.getOuterEnv());
+            // Add capabilities to the function environment
+            for (String capName : capabilities) {
+                Value capValue = env.resolveVar(capName);
+                funcEnv.createVar(capName, capValue);
+            }
+            return func.apply(argvals, funcEnv);
+        } else if (maybeFunc instanceof NativeFunctionVal) {
+            NativeFunctionVal nativeFunc = (NativeFunctionVal) maybeFunc;
+            // Native functions can access capabilities via env
+            return nativeFunc.apply(argvals);
+        } else {
+            throw new RuntimeException("The expression does not evaluate to a function and thus cannot be applied.");
+        }
     }
 }
 
-}
+
 
 //Object Get and Set property for Prototype
 class GetPropertyExpr implements Expression {
@@ -379,28 +409,44 @@ class ObjectLiteralExpr implements Expression {
 }
 
 class ObjectCreateExpr implements Expression {
-    private Expression prototypeExpr; // This can be null for default global prototype
+    private String constructorName;
+    private List<Expression> args;
 
-    public ObjectCreateExpr(Expression prototypeExpr) {
-        this.prototypeExpr = prototypeExpr;
+    public ObjectCreateExpr(String constructorName, List<Expression> args) {
+        this.constructorName = constructorName;
+        this.args = args;
     }
 
     public Value evaluate(Environment env) {
-        ObjectVal prototype = Environment.getGlobalPrototype(); // Default prototype
-        if (prototypeExpr != null) {
-            Value protoVal = prototypeExpr.evaluate(env);
-            if (protoVal instanceof ObjectVal) {
-                prototype = (ObjectVal) protoVal;
-            } else {
-                throw new RuntimeException("Prototype expression must evaluate to an ObjectVal");
-            }
+        // Get the constructor function
+        Value constructorVal = env.resolveVar(constructorName);
+        if (!(constructorVal instanceof ClosureVal)) {
+            throw new RuntimeException(constructorName + " is not a function");
         }
-        return new ObjectVal(prototype);
+        ClosureVal constructor = (ClosureVal) constructorVal;
+
+        // Create a new object with the constructor's prototype
+        Value protoVal = env.resolveVar(constructorName + ".prototype");
+        ObjectVal prototype;
+        if (protoVal instanceof ObjectVal) {
+            prototype = (ObjectVal) protoVal;
+        } else {
+            // If no prototype is defined, use an empty object
+            prototype = new ObjectVal(null);
+        }
+        ObjectVal newObj = new ObjectVal(prototype);
+
+        // Create a new environment with 'this' bound to newObj
+        Environment newEnv = new Environment(constructor.getOuterEnv());
+        newEnv.createVar("this", newObj);
+
+        // Evaluate the constructor body
+        List<Value> argVals = args.stream().map(arg -> arg.evaluate(env)).collect(Collectors.toList());
+        constructor.apply(argVals, newEnv);
+
+        return newObj;
     }
-
-	
 }
-
 class ImportExpr implements Expression {
     private String fileName;
     private String basePath; // New field to store base directory
@@ -434,8 +480,7 @@ class ImportExpr implements Expression {
 
         // Update the basePath for the imported file's directory
         String newBasePath = file.getParent();
-        ExpressionBuilderVisitor builder = new ExpressionBuilderVisitor(newBasePath);
-
+        ExpressionBuilderVisitor builder = new ExpressionBuilderVisitor(newBasePath, true); // Set sandboxed to true
         Expression prog = builder.visit(tree);
 
         // Evaluate the imported file in the same environment
@@ -460,31 +505,27 @@ class MethodCallExpr implements Expression {
     }
 
     public Value evaluate(Environment env) {
-        // Evaluate the object to get the ObjectVal
         Value objVal = objectExpr.evaluate(env);
-        if (!(objVal instanceof ObjectVal))
+        if (!(objVal instanceof ObjectVal)) {
             throw new RuntimeException("Trying to call a method on a non-object.");
+        }
         ObjectVal obj = (ObjectVal) objVal;
 
-        // Get the method property from the object
         Value methodVal = obj.getProperty(methodName);
-        if (!(methodVal instanceof ClosureVal) && !(methodVal instanceof NativeFunctionVal))
+        if (!(methodVal instanceof ClosureVal)) {
             throw new RuntimeException("Property " + methodName + " is not a function.");
+        }
+        ClosureVal method = (ClosureVal) methodVal;
 
-        // Evaluate the arguments
+        // Evaluate arguments
         List<Value> argVals = args.stream().map(arg -> arg.evaluate(env)).collect(Collectors.toList());
 
+        // Create a new environment with 'this' bound to the object
+        Environment methodEnv = new Environment(method.getOuterEnv());
+        methodEnv.createVar("this", obj);
+
         // Call the method
-        if (methodVal instanceof ClosureVal) {
-            ClosureVal closure = (ClosureVal) methodVal;
-            // Optionally, set 'this' context if your language supports it
-            return closure.apply(argVals);
-        } else if (methodVal instanceof NativeFunctionVal) {
-            NativeFunctionVal nativeFunc = (NativeFunctionVal) methodVal;
-            return nativeFunc.apply(argVals);
-        } else {
-            throw new RuntimeException("Property " + methodName + " is not callable.");
-        }
+        return method.apply(argVals, methodEnv);
     }
 }
 

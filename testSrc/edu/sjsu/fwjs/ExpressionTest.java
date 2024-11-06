@@ -526,4 +526,57 @@ public void testNetworkGetInvalidURL() throws IOException {
 
     // The test should expect a RuntimeException because the URL is invalid
 }
+
+
+// In ExpressionTest.java
+  @Test
+  public void testFunctionWithCapabilities() {
+    Environment env = new Environment();
+    Value fileIOCap = new FileIOCapability();
+    env.createVar("fileIO", fileIOCap);
+    Value networkIOCap = new NetworkIOCapability();
+    env.createVar("networkIO", networkIOCap);
+
+    // Define a sandboxed function that tries to access fileIO
+    List<String> params = new ArrayList<>();
+    Expression body = new FunctionAppExpr(
+        new GetPropertyExpr(new VarExpr("fileIO"), "writeFile"),
+        Arrays.asList(new ValueExpr(new StringVal("test.txt")), new ValueExpr(new StringVal("Hello World")))
+    );
+    ClosureVal funcVal = new ClosureVal(params, body, env, true); // Set isSandboxed to true
+    Expression funcExpr = new ValueExpr(funcVal);
+
+    // Call the function without passing capabilities
+    Expression funcCallNoCaps = new FunctionAppExpr(funcExpr, new ArrayList<>());
+
+    // Expect a RuntimeException because fileIO is not available in the function's environment
+    try {
+        funcCallNoCaps.evaluate(env);
+        fail("Expected RuntimeException due to missing capability");
+    } catch (RuntimeException e) {
+        // Expected exception
+    }
+
+    // Call the function with the fileIO capability
+    Expression funcCallWithCaps = new FunctionAppExpr(funcExpr, new ArrayList<>(), Arrays.asList("fileIO"));
+
+    // Evaluate the function call
+    funcCallWithCaps.evaluate(env);
+
+    // Check that the file was written
+    String content = null;
+    try {
+        content = new String(Files.readAllBytes(Paths.get("test.txt")));
+    } catch (IOException e) {
+        fail("Failed to read written file");
+    }
+    assertEquals("Hello World", content);
+
+    // Clean up
+    try {
+        Files.delete(Paths.get("test.txt"));
+    } catch (IOException e) {
+        // Ignore
+    }
+  }
 }

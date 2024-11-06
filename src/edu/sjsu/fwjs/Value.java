@@ -136,43 +136,47 @@ class ClosureVal implements Value {
     private List<String> params;
     private Expression body;
     private Environment outerEnv;
+    private boolean isSandboxed;
 
-    public ClosureVal(List<String> params, Expression body, Environment env) {
+    public ClosureVal(List<String> params, Expression body, Environment env, boolean isSandboxed) {
         this.params = params;
         this.body = body;
-        //Might have to change this for capabilities, make more strict
         this.outerEnv = env;
+        this.isSandboxed = isSandboxed;
     }
 
-    /**
-     * Apply this closure to given arguments within the specified environment.
-     * 
-     * @param argVals The arguments to the function.
-     * @param env The environment in which to evaluate the function.
-     * @return The result of evaluating the function.
-     */
-    public Value apply(List<Value> argVals) {
-        Environment env = new Environment(this.outerEnv);
-        for(int i = 0; i < params.size(); i++) {
+    public ClosureVal(List<String> params, Expression body, Environment env) {
+        this(params, body, env, false); // Default to not sandboxed
+    }
+
+    public Environment getOuterEnv() {
+        return outerEnv;
+    }
+
+    public boolean isSandboxed() {
+        return this.isSandboxed;
+    }
+
+    public Value apply(List<Value> argVals, Environment callEnv) {
+        Environment env;
+        if (callEnv != null) {
+            env = callEnv;
+        } else if (isSandboxed) {
+            env = new Environment(null); // No outer environment
+        } else {
+            env = new Environment(this.outerEnv);
+        }
+        for (int i = 0; i < params.size(); i++) {
             env.createVar(params.get(i), argVals.get(i));
         }
-
         return this.body.evaluate(env);
     }
 
-    @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder("function(");
-        String sep = "";
-        for (String param : params) {
-            sb.append(sep).append(param);
-            sep = ", ";
-        }
-        sb.append(") {...};");
-        return sb.toString();
+    // Original apply method for backward compatibility
+    public Value apply(List<Value> argVals) {
+        return apply(argVals, null);
     }
 }
-
 /**
  * String values for FWJS.
  */
@@ -231,10 +235,10 @@ class FileIOCapability extends ObjectVal {
 
         // Add the 'writeFile' method
         this.setProperty("writeFile", new NativeFunctionVal(args -> {
-            System.out.println("System args 0");
+            /* System.out.println("System args 0");
             System.out.println(args.get(0));
             System.out.println("System args 1");
-            System.out.println(args.get(1));
+            System.out.println(args.get(1)); */
             if (args.size() != 2 || !(args.get(0) instanceof StringVal) || !(args.get(1) instanceof StringVal)) {
                 throw new RuntimeException("writeFile expects two string arguments");
             }

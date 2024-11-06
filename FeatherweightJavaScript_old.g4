@@ -11,7 +11,6 @@ VAR: 'var';
 PRINT: 'print';
 NEW: 'new';
 IMPORT: 'import';
-USING: 'using';
 
 // Literals
 INT: [1-9][0-9]* | '0';
@@ -66,14 +65,15 @@ stat:
 expr:
     LPAREN expr RPAREN                                   # parens
     | objectLiteral                                      # objectLiteralExpr
-    | expr LPAREN arglist? RPAREN capabilityClause?          # functionCall
+    | expr LPAREN arglist? RPAREN                        # functionCall
+    | assignmentExpr
     | expr op=('*' | '/' | '%') expr                     # MulDivMod
     | expr op=('+' | '-') expr                           # AddSub
     | expr op=('<' | '<=' | '>' | '>=' | '==') expr      # Comparisons
     | FUNCTION IDENTIFIER LPAREN idlist? RPAREN block    # functionDeclaration
     | FUNCTION LPAREN idlist? RPAREN block               # anonFunctionDeclaration
-    | VAR IDENTIFIER ASSIGN expr                         # variableDeclaration
-    | IDENTIFIER ASSIGN expr                             # assignmentStatement
+    | VAR IDENTIFIER ASSIGN assignmentExpr               # variableDeclaration
+    | IDENTIFIER ASSIGN assignmentExpr                   # assignmentStatement
     | IDENTIFIER                                         # variableReference
     | NEW IDENTIFIER LPAREN arglist? RPAREN              # objectCreation
     | expr DOT IDENTIFIER                                # objectPropertyAccess
@@ -85,9 +85,34 @@ expr:
     | STRING                                             # string
     ;
 
-capabilityClause: USING capabilityList;
+assignmentExpr:
+    functionExpr
+    ;
 
-capabilityList: IDENTIFIER (COMMA IDENTIFIER)*;
+functionExpr:
+    objectExpr
+    | functionExpr LPAREN arglist? RPAREN                # functionCall
+    ;
+
+objectExpr:
+    primary
+    | objectExpr DOT IDENTIFIER                          # objectPropertyAccess
+    | objectExpr DOT IDENTIFIER LPAREN arglist? RPAREN   # methodCall
+    | objectExpr DOT IDENTIFIER ASSIGN assignmentExpr    # objectPropertyAssign
+    ;
+
+primary:
+    LPAREN expr RPAREN                                   # parens
+    | FUNCTION IDENTIFIER LPAREN idlist? RPAREN block    # functionDeclaration
+    | FUNCTION LPAREN idlist? RPAREN block               # anonFunctionDeclaration
+    | NEW IDENTIFIER LPAREN arglist? RPAREN              # objectCreation
+    | IDENTIFIER                                         # variableReference
+    | INT                                                # int
+    | BOOL                                               # boolean
+    | NULL                                               # null
+    | STRING                                             # string
+    | objectLiteral                                      # objectLiteralExpr
+    ;
 
 objectLiteral:
     LBRACE objectPropertyList? RBRACE

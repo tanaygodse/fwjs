@@ -1,0 +1,12 @@
+// module2.fwjs
+
+function foo() {
+  // Read from a file using fileIO capability
+  content = fileIO.readFile("input.txt");
+
+  // Perform a network GET request using networkIO capability
+  response = networkIO.get("http://example.com/api");
+
+  // Return some result
+  42;
+}

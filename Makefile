@@ -14,6 +14,7 @@ SCRIPTS=closure.fwjs examples.fwjs functions.fwjs operators.fwjs test.fwjs \
 SCRIPT_PROTO = prototype.fwjs
 SCRIPT_CLOSURE = closure.fwjs 
 SCRIPT_OBJECT = objects.fwjs
+SCRIPT_CAP = capimport.fwjs
 TREES_DIR=parseTrees
 # Choosing build instead of bin to avoid conflicts with Eclipse
 BUILD_DIR=build
@@ -57,6 +58,11 @@ run_closure:
 run_object:
 	$(foreach script, ${SCRIPT_OBJECT}, echo "Running ${FWJS_SCRIPT_DIR}/${script}"; \
 		java -cp ${BUILD_DIR}:${ANTLR_JAR} ${PACKAGE_NAME}.Interpreter ${FWJS_SCRIPT_DIR}/${script};)
+
+run_cap:
+	$(foreach script, ${SCRIPT_CAP}, echo "Running ${FWJS_SCRIPT_DIR}/${script}"; \
+		java -cp ${BUILD_DIR}:${ANTLR_JAR} ${PACKAGE_NAME}.Interpreter ${FWJS_SCRIPT_DIR}/${script};)
+
 
 
 ${ZIP_FILE}:
