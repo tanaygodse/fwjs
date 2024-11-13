@@ -1,8 +1,8 @@
 // module.fwjs
 var x = 10;
 var y = 11;
-function foo() {
+function foo(x) {
     print(x);
-    x;
+    x+1;
 };
 

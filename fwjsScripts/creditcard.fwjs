@@ -1,0 +1,10 @@
+import "module3.fwjs";
+
+function main() {
+    readAndPrintFile("dummy.txt") using networkIO, fileIO;
+    dummyCalculations(5, 10) using networkIO, fileIO;
+}
+
+main();
+test();
+

@@ -1,6 +1,5 @@
 // main.fwjs
 import "module.fwjs";
-y = foo();
-print(x);
+y = foo(10);
 print(8 + y);
 
