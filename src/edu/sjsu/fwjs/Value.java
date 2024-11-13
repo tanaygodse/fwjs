@@ -157,20 +157,27 @@ class ClosureVal implements Value {
         return this.isSandboxed;
     }
 
+
     public Value apply(List<Value> argVals, Environment callEnv) {
-        Environment env;
-        if (callEnv != null) {
-            env = callEnv;
-        } else if (isSandboxed) {
-            env = new Environment(null); // No outer environment
-        } else {
-            env = new Environment(this.outerEnv);
-        }
-        for (int i = 0; i < params.size(); i++) {
-            env.createVar(params.get(i), argVals.get(i));
-        }
+      Environment env;
+      if (callEnv != null) {
+        env = callEnv;
+      } else if (isSandboxed) {
+        env = new Environment(null); // No outer environment
+      } else {
+        env = new Environment(this.outerEnv);
+      }
+      for (int i = 0; i < params.size(); i++) {
+        env.createVar(params.get(i), argVals.get(i));
+      }
+      try {
         return this.body.evaluate(env);
+      } catch (ReturnException e) {
+        return e.getReturnValue();
+      }
     }
+
+
 
     // Original apply method for backward compatibility
     public Value apply(List<Value> argVals) {
@@ -185,6 +192,14 @@ class StringVal implements Value {
 
     public StringVal(String s) {
         this.strVal = s;
+    }
+
+    public int length() {
+        return strVal.length();
+    }
+
+    public StringVal substring(int start, int end) {
+        return new StringVal(strVal.substring(start, end));
     }
 
     @Override
@@ -273,7 +288,6 @@ class NetworkIOCapability extends ObjectVal {
 
                 // Get response code and handle redirects or errors
                 int responseCode = conn.getResponseCode();
-                System.out.println("GET Response Code :: " + responseCode);
 
                 InputStream in;
                 if (responseCode >= 200 && responseCode < 300) {
@@ -290,8 +304,6 @@ class NetworkIOCapability extends ObjectVal {
                     sb.append("\n");
                 }
                 reader.close();
-
-                System.out.println("GET Response Content :: " + sb.toString());
 
                 return new StringVal(sb.toString());
             } catch (IOException e) {
@@ -322,7 +334,6 @@ class NetworkIOCapability extends ObjectVal {
 
                 // Get response code and handle redirects or errors
                 int responseCode = conn.getResponseCode();
-                System.out.println("POST Response Code :: " + responseCode);
 
                 InputStream in;
                 if (responseCode >= 200 && responseCode < 300) {

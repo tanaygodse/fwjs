@@ -12,6 +12,7 @@ PRINT: 'print';
 NEW: 'new';
 IMPORT: 'import';
 USING: 'using';
+RETURN: 'return';
 
 // Literals
 INT: [1-9][0-9]* | '0';
@@ -21,6 +22,7 @@ STRING: '"' ( ~["\\] | '\\' (["\\bfnrt] | 'u' HEX HEX HEX HEX) )* '"';
 fragment HEX: [0-9a-fA-F];
 
 // Symbols 
+NOT: '!';
 MUL: '*';
 DIV: '/';
 PLUS: '+';
@@ -31,6 +33,7 @@ GT: '>';
 LT: '<';
 GE: '>=';
 LE: '<=';
+NE: '!=';
 EQ: '==';
 DOT: '.';
 COMMA: ',';
@@ -55,35 +58,58 @@ prog: stat+;
 
 stat:
     importStatement                                      # importExpr
+    | functionDeclaration                                # funcDeclStat
+    | variableDeclaration SEPARATOR                      # varDeclStat
+    | assignmentStatement SEPARATOR                      # assignStat
+    | returnStatement SEPARATOR                          # returnStat
     | expr SEPARATOR                                     # bareExpr
     | IF LPAREN expr RPAREN block ELSE block             # ifThenElse
     | IF LPAREN expr RPAREN block                        # ifThen
-    | WHILE LPAREN expr RPAREN block                     # while
-    | PRINT LPAREN expr RPAREN SEPARATOR                 # print
-    | SEPARATOR                                          # blankExpr
+    | WHILE LPAREN expr RPAREN block                     # whileStat
+    | PRINT LPAREN expr RPAREN SEPARATOR                 # printStat
+    | SEPARATOR                                          # blankStat
     ;
 
 expr:
     LPAREN expr RPAREN                                   # parens
     | objectLiteral                                      # objectLiteralExpr
-    | expr LPAREN arglist? RPAREN capabilityClause?          # functionCall
+    | expr LPAREN arglist? RPAREN capabilityClause?      # functionCall
+    | NOT expr                                           # notExpr
     | expr op=('*' | '/' | '%') expr                     # MulDivMod
     | expr op=('+' | '-') expr                           # AddSub
-    | expr op=('<' | '<=' | '>' | '>=' | '==') expr      # Comparisons
-    | FUNCTION IDENTIFIER LPAREN idlist? RPAREN block    # functionDeclaration
-    | FUNCTION LPAREN idlist? RPAREN block               # anonFunctionDeclaration
-    | VAR IDENTIFIER ASSIGN expr                         # variableDeclaration
-    | IDENTIFIER ASSIGN expr                             # assignmentStatement
-    | IDENTIFIER                                         # variableReference
-    | NEW IDENTIFIER LPAREN arglist? RPAREN              # objectCreation
+    | expr op=('<' | '<=' | '>' | '>=' | '==' | '!=') expr # Comparisons
     | expr DOT IDENTIFIER                                # objectPropertyAccess
     | expr DOT IDENTIFIER ASSIGN expr                    # objectPropertyAssign
     | expr DOT IDENTIFIER LPAREN arglist? RPAREN         # methodCall
+    | NEW IDENTIFIER LPAREN arglist? RPAREN              # objectCreation
+    | IDENTIFIER                                         # variableReference
     | INT                                                # int
     | BOOL                                               # boolean
     | NULL                                               # null
     | STRING                                             # string
     ;
+
+functionDeclaration:
+      FUNCTION IDENTIFIER LPAREN idlist? RPAREN block    # funcDeclWithName
+    | FUNCTION LPAREN idlist? RPAREN block               # anonFuncDecl
+    ;
+
+
+
+variableDeclaration:
+    VAR IDENTIFIER ASSIGN expr                           # varDecl
+    ;
+
+
+assignmentStatement:
+    IDENTIFIER ASSIGN expr                               # assignmentExpr
+    ;
+
+
+returnStatement:
+    RETURN expr?                                         # returnStatRule
+    ;
+
 
 capabilityClause: USING capabilityList;
 
@@ -111,6 +137,7 @@ idlist: IDENTIFIER (COMMA IDENTIFIER)*;
 
 block:
     LBRACE stat* RBRACE                                  # fullBlock
-    | stat                                               # simpBlock
+    | stat                                               # simpleBlock
     ;
+
 

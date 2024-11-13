@@ -122,8 +122,10 @@ class BinOpExpr implements Expression {
       }
 		}else if(op.equals(Op.DIVIDE)) {
 			return new IntVal(x / y);
-		}else if(op.equals(Op.EQ)) {
-				return new BoolVal(x == y);
+    }else if (op.equals(Op.NE)) {
+      return new BoolVal(x != y);
+    }else if(op.equals(Op.EQ)) {
+			return new BoolVal(x == y);
 		}else if(op.equals(Op.GE)) {
 			return new BoolVal(x >= y);
 		}else if(op.equals(Op.GT)) {
@@ -527,5 +529,50 @@ class MethodCallExpr implements Expression {
         // Call the method
         return method.apply(argVals, methodEnv);
     }
+
 }
 
+class NotExpr implements Expression {
+    private Expression expr;
+
+    public NotExpr(Expression expr) {
+        this.expr = expr;
+    }
+
+    @Override
+    public Value evaluate(Environment env) {
+        Value v = expr.evaluate(env);
+        if (v instanceof BoolVal) {
+            return new BoolVal(!((BoolVal) v).toBoolean());
+        } else {
+            throw new RuntimeException("Cannot apply NOT operator to non-boolean value");
+        }
+    }
+}
+
+
+class ReturnExpr implements Expression {
+    private Expression expr;
+
+    public ReturnExpr(Expression expr) {
+        this.expr = expr;
+    }
+
+    @Override
+    public Value evaluate(Environment env) {
+        Value returnValue = expr != null ? expr.evaluate(env) : new NullVal();
+        throw new ReturnException(returnValue);
+    }
+}
+
+class ReturnException extends RuntimeException {
+    private Value returnValue;
+
+    public ReturnException(Value returnValue) {
+        this.returnValue = returnValue;
+    }
+
+    public Value getReturnValue() {
+        return returnValue;
+    }
+}

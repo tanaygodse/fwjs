@@ -53,6 +53,7 @@ public class ExpressionBuilderVisitor extends FeatherweightJavaScriptBaseVisitor
     return visit(ctx.expr());
   }
 
+
   @Override
   public Expression visitIfThenElse(FeatherweightJavaScriptParser.IfThenElseContext ctx) {
     Expression cond = visit(ctx.expr());
@@ -60,6 +61,7 @@ public class ExpressionBuilderVisitor extends FeatherweightJavaScriptBaseVisitor
     Expression els = visit(ctx.block(1));
     return new IfExpr(cond, thn, els);
   }
+
 
   @Override
   public Expression visitIfThen(FeatherweightJavaScriptParser.IfThenContext ctx) {
@@ -69,16 +71,17 @@ public class ExpressionBuilderVisitor extends FeatherweightJavaScriptBaseVisitor
   }
 
   @Override
-  public Expression visitWhile(FeatherweightJavaScriptParser.WhileContext ctx) {
+  public Expression visitWhileStat(FeatherweightJavaScriptParser.WhileStatContext ctx) {
     Expression cond = visit(ctx.expr());
-    Expression keepDoing = visit(ctx.block());
-    return new WhileExpr(cond, keepDoing);
+    Expression body = visit(ctx.block());
+    return new WhileExpr(cond, body);
   }
 
+
   @Override
-  public Expression visitPrint(FeatherweightJavaScriptParser.PrintContext ctx) {
-    Expression val = visit(ctx.expr());
-    return new PrintExpr(val);
+  public Expression visitPrintStat(FeatherweightJavaScriptParser.PrintStatContext ctx) {
+    Expression expr = visit(ctx.expr());
+    return new PrintExpr(expr);
   }
 
   @Override
@@ -138,28 +141,33 @@ public class ExpressionBuilderVisitor extends FeatherweightJavaScriptBaseVisitor
   }
 
   @Override
-  public Expression visitSimpBlock(FeatherweightJavaScriptParser.SimpBlockContext ctx) {
+  public Expression visitSimpleBlock(FeatherweightJavaScriptParser.SimpleBlockContext ctx) {
     return visit(ctx.stat());
   }
+
 
   @Override
   public Expression visitVariableReference(FeatherweightJavaScriptParser.VariableReferenceContext ctx) {
     return new VarExpr(ctx.IDENTIFIER().getSymbol().getText());
   }
 
+
   @Override
-  public Expression visitVariableDeclaration(FeatherweightJavaScriptParser.VariableDeclarationContext ctx) {
+  public Expression visitVarDecl(FeatherweightJavaScriptParser.VarDeclContext ctx) {
     String varName = ctx.IDENTIFIER().getText();
     Expression expr = visit(ctx.expr());
     return new VarDeclExpr(varName, expr);
   }
 
+
+
   @Override
-  public Expression visitAssignmentStatement(FeatherweightJavaScriptParser.AssignmentStatementContext ctx) {
+  public Expression visitAssignmentExpr(FeatherweightJavaScriptParser.AssignmentExprContext ctx) {
     String varName = ctx.IDENTIFIER().getText();
     Expression expr = visit(ctx.expr());
     return new AssignExpr(varName, expr);
   }
+
 
 
   @Override
@@ -220,21 +228,18 @@ public class ExpressionBuilderVisitor extends FeatherweightJavaScriptBaseVisitor
     else
       return new BinOpExpr(Op.SUBTRACT,left, right);
   }
-  @Override
-  public Expression visitAnonFunctionDeclaration(FeatherweightJavaScriptParser.AnonFunctionDeclarationContext ctx) {
-    List<TerminalNode> tnodes;
-    if (ctx.idlist() != null)
-      tnodes = ctx.idlist().IDENTIFIER();
-    else
-      tnodes = Collections.emptyList();
-    List<String> params = new ArrayList<String>();
-    for(TerminalNode tn : tnodes){
-      params.add(tn.getSymbol().getText());
-    }
+
+@Override
+  public Expression visitAnonFuncDecl(FeatherweightJavaScriptParser.AnonFuncDeclContext ctx) {
+    List<String> params = ctx.idlist() != null
+            ? ctx.idlist().IDENTIFIER().stream().map(TerminalNode::getText).collect(Collectors.toList())
+            : new ArrayList<>();
     Expression body = visit(ctx.block());
     return new AnonFunctionDeclExpr(params, body, isSandboxed);
   }
-  @Override
+
+
+/*  @Override
   public Expression visitFunctionDeclaration(FeatherweightJavaScriptParser.FunctionDeclarationContext ctx) {
     String name = ctx.IDENTIFIER().getSymbol().getText();
     List<TerminalNode> tnodes;
@@ -249,7 +254,8 @@ public class ExpressionBuilderVisitor extends FeatherweightJavaScriptBaseVisitor
     Expression body = visit(ctx.block());
     return new FunctionDeclExpr(name, params, body, isSandboxed);
   }
-  
+*/
+
   @Override
   public Expression visitObjectLiteralExpr(FeatherweightJavaScriptParser.ObjectLiteralExprContext ctx) {
     List<FeatherweightJavaScriptParser.ObjectPropertyContext> properties = ctx.objectLiteral().objectPropertyList() != null
@@ -308,6 +314,56 @@ public Expression visitMethodCall(FeatherweightJavaScriptParser.MethodCallContex
             ? ctx.arglist().expr().stream().map(this::visit).collect(Collectors.toList())
             : Collections.emptyList();
     return new MethodCallExpr(objExpr, methodName, args);
+}
+
+
+@Override
+public Expression visitNotExpr(FeatherweightJavaScriptParser.NotExprContext ctx) {
+    Expression expr = visit(ctx.expr());
+    return new NotExpr(expr);
+}
+
+
+@Override
+public Expression visitFuncDeclStat(FeatherweightJavaScriptParser.FuncDeclStatContext ctx) {
+    return visit(ctx.functionDeclaration());
+}
+
+
+@Override
+public Expression visitFuncDeclWithName(FeatherweightJavaScriptParser.FuncDeclWithNameContext ctx) {
+    String name = ctx.IDENTIFIER().getText();
+    List<String> params = new ArrayList<>();
+    if (ctx.idlist() != null) {
+        for (TerminalNode idNode : ctx.idlist().IDENTIFIER()) {
+            params.add(idNode.getText());
+        }
+    }
+    Expression body = visit(ctx.block());
+    return new FunctionDeclExpr(name, params, body, isSandboxed);
+}
+
+
+
+@Override
+public Expression visitVarDeclStat(FeatherweightJavaScriptParser.VarDeclStatContext ctx) {
+    return visit(ctx.variableDeclaration());
+}
+
+@Override
+public Expression visitAssignStat(FeatherweightJavaScriptParser.AssignStatContext ctx) {
+    return visit(ctx.assignmentStatement());
+}
+
+@Override
+public Expression visitReturnStat(FeatherweightJavaScriptParser.ReturnStatContext ctx) {
+    return visit(ctx.returnStatement());
+}
+
+@Override
+public Expression visitReturnStatRule(FeatherweightJavaScriptParser.ReturnStatRuleContext ctx) {
+    Expression expr = ctx.expr() != null ? visit(ctx.expr()) : null;
+    return new ReturnExpr(expr);
 }
 
 
