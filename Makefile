@@ -15,7 +15,8 @@ SCRIPT_PROTO = prototype.fwjs
 SCRIPT_CLOSURE = closure.fwjs 
 SCRIPT_OBJECT = objects.fwjs
 SCRIPT_CAP = capimport.fwjs
-SCRIPT_CARD = creditcard.fwjs
+SCRIPT_CARD = luhn.fwjs
+TEST_NEW = test_math_floor.fwjs test_parseInt.fwjs test_string_methods.fwjs test_toString.fwjs test_while_loop.fwjs
 TREES_DIR=parseTrees
 # Choosing build instead of bin to avoid conflicts with Eclipse
 BUILD_DIR=build
@@ -68,6 +69,9 @@ run_card:
 	$(foreach script, ${SCRIPT_CARD}, echo "Running ${FWJS_SCRIPT_DIR}/${script}"; \
 		java -cp ${BUILD_DIR}:${ANTLR_JAR} ${PACKAGE_NAME}.Interpreter ${FWJS_SCRIPT_DIR}/${script};)
 
+run_new:
+	$(foreach script, ${TEST_NEW}, echo "Running ${FWJS_SCRIPT_DIR}/${script}"; \
+		java -cp ${BUILD_DIR}:${ANTLR_JAR} ${PACKAGE_NAME}.Interpreter ${FWJS_SCRIPT_DIR}/${script};)
 
 
 

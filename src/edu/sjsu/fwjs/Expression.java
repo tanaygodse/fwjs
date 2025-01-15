@@ -85,63 +85,72 @@ class BinOpExpr implements Expression {
 	}
 
 	@SuppressWarnings("incomplete-switch")
-	public Value evaluate(Environment env) {
-		List<Value> vs = this.exprs.stream().map(x -> x.evaluate(env)).collect(Collectors.toList());
-		Boolean nullFlag = vs.stream().anyMatch(x -> (x == null));
-		Boolean closureFlag = vs.stream().anyMatch(x -> (x instanceof ClosureVal));
+public Value evaluate(Environment env) {
+    List<Value> vs = this.exprs.stream().map(x -> x.evaluate(env)).collect(Collectors.toList());
+    Boolean nullFlag = vs.stream().anyMatch(x -> (x == null));
+    Boolean closureFlag = vs.stream().anyMatch(x -> (x instanceof ClosureVal));
 
-		//Javascript-ish implicit type conversion
-		List<Integer> vals = vs.stream().map(
-			x -> {
-				if (x instanceof BoolVal)
-					return ((BoolVal)x).toBoolean() ? 1 : 0;
-				else if (x instanceof NullVal)
-					return 0;
-				else if (x instanceof ClosureVal)
-					return -1; //Handled with closureFlag above
-				return ((IntVal)x).toInt();
-			}
-		).collect(Collectors.toList());
-		int x = vals.get(0);
-		int y = vals.get(1);
+    // Convert values to long
+    List<Long> vals = vs.stream().map(
+        x -> {
+            if (x instanceof BoolVal)
+                return ((BoolVal)x).toBoolean() ? 1L : 0L;
+            else if (x instanceof NullVal)
+                return 0L;
+            else if (x instanceof ClosureVal)
+                return -1L; // Handle closureFlag above
+            return ((IntVal)x).toLong(); // Now uses toLong() for compatibility
+        }
+    ).collect(Collectors.toList());
+    long x = vals.get(0);
+    long y = vals.get(1);
 
-		if (nullFlag || closureFlag){
-			if (op.equals(Op.EQ)) {
-				return new BoolVal(vs.get(0).equals(vs.get(1)));
-			}
-			else if (!nullFlag)
-				throw new RuntimeException("Tried to perform arithmetic or numeric comparison with a closure.");
-		}
-		if(op.equals(Op.ADD)) {
-      if (vs.get(0) instanceof StringVal || vs.get(1) instanceof StringVal) {
-        String s1 = vs.get(0).toString();
-        String s2 = vs.get(1).toString();
-        return new StringVal(s1 + s2);
-      } else {
-        return new IntVal(x + y);
-      }
-		}else if(op.equals(Op.DIVIDE)) {
-			return new IntVal(x / y);
-    }else if (op.equals(Op.NE)) {
-      return new BoolVal(x != y);
-    }else if(op.equals(Op.EQ)) {
-			return new BoolVal(x == y);
-		}else if(op.equals(Op.GE)) {
-			return new BoolVal(x >= y);
-		}else if(op.equals(Op.GT)) {
-			return new BoolVal(x > y);
-		}else if(op.equals(Op.LE)) {
-			return new BoolVal(x <= y);
-		}else if(op.equals(Op.LT)) {
-			return new BoolVal(x < y);
-		}else if(op.equals(Op.MOD)) {
-			return new IntVal(x % y);
-		}else if(op.equals(Op.MULTIPLY)) {
-			return new IntVal(x * y);
-		}else if(op.equals(Op.SUBTRACT)) {
-			return new IntVal(x - y);
-		}else {return new NullVal();}
-	}
+    if (nullFlag || closureFlag) {
+        if (op.equals(Op.EQ)) {
+            return new BoolVal(vs.get(0).equals(vs.get(1)));
+        } else if (!nullFlag) {
+            throw new RuntimeException("Tried to perform arithmetic or numeric comparison with a closure.");
+        }
+    }
+
+    // Perform operations on long values
+    switch (op) {
+        case AND:
+            return new BoolVal((x != 0) && (y != 0));
+        case OR:
+            return new BoolVal((x != 0) || (y != 0));
+        case ADD:
+            if (vs.get(0) instanceof StringVal || vs.get(1) instanceof StringVal) {
+                String s1 = vs.get(0).toString();
+                String s2 = vs.get(1).toString();
+                return new StringVal(s1 + s2);
+            } else {
+                return new IntVal(x + y);
+            }
+        case SUBTRACT:
+            return new IntVal(x - y);
+        case MULTIPLY:
+            return new IntVal(x * y);
+        case DIVIDE:
+            return new IntVal(x / y); // Ensure no division by zero elsewhere
+        case MOD:
+            return new IntVal(x % y);
+        case GT:
+            return new BoolVal(x > y);
+        case GE:
+            return new BoolVal(x >= y);
+        case LT:
+            return new BoolVal(x < y);
+        case LE:
+            return new BoolVal(x <= y);
+        case EQ:
+            return new BoolVal(x == y);
+        case NE:
+            return new BoolVal(x != y);
+        default:
+            return new NullVal(); // Unsupported operation
+    }
+}
 }
 
 /**
@@ -339,6 +348,56 @@ class FunctionAppExpr implements Expression {
                 Value capValue = env.resolveVar(capName);
                 funcEnv.createVar(capName, capValue);
             }
+            try {
+                funcEnv.resolveVar("parseInt");
+                // If we succeed, that means parseInt is already in the environment.
+                // So we can do `env.updateVar` or skip altogether:
+                funcEnv.updateVar("parseInt", new NativeFunctionVal(args1 -> {
+                if (args1.size() != 1 || !(args1.get(0) instanceof StringVal)) {
+                    throw new RuntimeException("parseInt expects a single string argument");
+                }
+                StringVal s = (StringVal) args1.get(0);
+                try {
+                    String trimmed = s.toString().trim();
+                    // Parse as long, store in the new IntVal constructor
+                    long val = Long.parseLong(trimmed);
+                    return new IntVal(val);
+                } catch (NumberFormatException e) {
+                    throw new RuntimeException("Invalid integer string for parseInt: " + s.toString());
+                }
+                }));
+            }catch (RuntimeException e) {
+                // If we fail the resolveVar, that means parseInt doesn't exist here yet.
+                funcEnv.createVar("parseInt", new NativeFunctionVal(args1 -> {
+                    if (args1.size() != 1 || !(args1.get(0) instanceof StringVal)) {
+                        throw new RuntimeException("parseInt expects a single string argument");
+                    }
+                    StringVal s = (StringVal) args1.get(0);
+                    try {
+                        String trimmed = s.toString().trim();
+                        // Parse as long, store in the new IntVal constructor
+                        long val = Long.parseLong(trimmed);
+                        return new IntVal(val);
+                    } catch (NumberFormatException e1) {
+                        throw new RuntimeException("Invalid integer string for parseInt: " + s.toString());
+                    }
+                    }));
+            }
+            ObjectVal mathObj = new ObjectVal(null);
+            mathObj.setProperty("floor", new NativeFunctionVal(args2 -> {
+                // For this interpreter, we assume integer division, so 'floor' is effectively a no-op 
+                if (args2.size() != 1 || !(args2.get(0) instanceof IntVal)) {
+                    throw new RuntimeException("Math.floor(...) expects one integer argument");
+                }
+                int val = ((IntVal) args2.get(0)).toInt();
+                return new IntVal(val); // Already "floored" as int
+            }));
+            try{
+                funcEnv.resolveVar("Math");
+                funcEnv.updateVar("Math", mathObj);
+            } catch (RuntimeException e) {
+                funcEnv.updateVar("Math", mathObj);
+            }
             return func.apply(argvals, funcEnv);
         } else if (maybeFunc instanceof NativeFunctionVal) {
             NativeFunctionVal nativeFunc = (NativeFunctionVal) maybeFunc;
@@ -364,9 +423,25 @@ class GetPropertyExpr implements Expression {
 
     public Value evaluate(Environment env) {
         Value val = objectExpr.evaluate(env);
-        if (!(val instanceof ObjectVal))
+        /* if (!(val instanceof ObjectVal))
             throw new RuntimeException("Trying to access a property on a non-object.");
         return ((ObjectVal) val).getProperty(property);
+        */
+        if (val instanceof ObjectVal) {
+            return ((ObjectVal) val).getProperty(property);
+        } else if (val instanceof StringVal) {
+            return ((StringVal) val).getProperty(property);
+        } else if (val instanceof IntVal) {
+            return ((IntVal) val).getProperty(property);
+        } else if (val instanceof BoolVal) {
+            return ((BoolVal) val).getProperty(property);
+        } else if (val instanceof NullVal) {
+            return ((NullVal) val).getProperty(property);
+        } else {
+            throw new RuntimeException(
+              "Trying to access a property on a non-object (and not a recognized type).");
+        }
+        
     }
 }
 
@@ -479,12 +554,11 @@ class ImportExpr implements Expression {
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         FeatherweightJavaScriptParser parser = new FeatherweightJavaScriptParser(tokens);
         ParseTree tree = parser.prog();  // parse the imported file
-
+        
         // Update the basePath for the imported file's directory
         String newBasePath = file.getParent();
         ExpressionBuilderVisitor builder = new ExpressionBuilderVisitor(newBasePath, true); // Set sandboxed to true
         Expression prog = builder.visit(tree);
-
         // Evaluate the imported file in the same environment
         return prog.evaluate(env);
       } catch (Exception e) {

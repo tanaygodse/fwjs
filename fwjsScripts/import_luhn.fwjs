@@ -1,0 +1,7 @@
+import "luhn.fwjs";
+
+var filename1 = "cc.txt";
+readAndValidate(filename1) using fileIO;
+
+var filename2 = "cc.txt";
+readAndValidate(filename2) using fileIO;

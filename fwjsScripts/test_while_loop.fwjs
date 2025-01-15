@@ -1,0 +1,16 @@
+// test_while_loop.fwjs
+
+var i = 0;
+while (i < 3) {
+    print(i);
+    i = i + 1;
+}
+// Expect printed sequence: 0, 1, 2
+
+// Test condition that starts false:
+var j = 5;
+while (j < 3) {
+    print("Won't see me");
+}
+print("Done!");
+// Expect only "Done!" to appear

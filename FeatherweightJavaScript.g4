@@ -22,6 +22,8 @@ STRING: '"' ( ~["\\] | '\\' (["\\bfnrt] | 'u' HEX HEX HEX HEX) )* '"';
 fragment HEX: [0-9a-fA-F];
 
 // Symbols 
+AND: '&&';
+OR: '||';
 NOT: '!';
 MUL: '*';
 DIV: '/';
@@ -71,7 +73,9 @@ stat:
     ;
 
 expr:
-    LPAREN expr RPAREN                                   # parens
+    expr AND expr                                        # logicalAnd
+    | expr OR expr                                       # logicalOr
+    | LPAREN expr RPAREN                                 # parens
     | objectLiteral                                      # objectLiteralExpr
     | expr LPAREN arglist? RPAREN capabilityClause?      # functionCall
     | NOT expr                                           # notExpr

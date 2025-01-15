@@ -1,0 +1,9 @@
+// test_string_methods.fwjs
+
+var greeting = "Hello FWJS!";
+print(greeting.length);            // Expect: 11 (if "Hello FWJS!" is 11 chars total)
+print(greeting.charCodeAt(0));     // Expect ASCII code of 'H' (72)
+print(greeting.charCodeAt(5));     // Expect ASCII code of ' ' (32), if there's a space
+
+var partial = greeting.substring(6, 10);
+print(partial);                    // Expect: FWJS

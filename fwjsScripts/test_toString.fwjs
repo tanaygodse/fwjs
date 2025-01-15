@@ -1,0 +1,16 @@
+// test_toString.fwjs
+
+// Integer
+var i = 42;
+print(i.toString());  // Expect: "42"
+
+// Boolean
+var b = false;
+print(b.toString());  // Expect: "false"
+
+// Null
+var n = null;
+print(n.toString());  // Expect: "null"
+
+// Confirm .toString() returns a StringVal by checking string methods:
+print(n.toString().length); // Expect: 4

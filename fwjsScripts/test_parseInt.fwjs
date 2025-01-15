@@ -1,0 +1,14 @@
+// test_parseInt.fwjs
+
+// Confirm parseInt(...) works for normal integer strings:
+var n = parseInt("1234");
+print(n);  // Expect: 1234
+
+// Test a larger number within range:
+var m = parseInt("999999999");
+print(m);  // Expect: 999999999
+
+// Error
+var bad = parseInt("12ab34");
+print(bad);
+

@@ -191,6 +191,21 @@ public class ExpressionBuilderVisitor extends FeatherweightJavaScriptBaseVisitor
   }
 
   @Override
+  public Expression visitLogicalAnd(FeatherweightJavaScriptParser.LogicalAndContext ctx) {
+      Expression left = visit(ctx.expr(0));
+      Expression right = visit(ctx.expr(1));
+      // We'll interpret && as a new kind of BinOp, or just evaluate it directly:
+      return new BinOpExpr(Op.AND, left, right);
+  }
+
+  @Override
+  public Expression visitLogicalOr(FeatherweightJavaScriptParser.LogicalOrContext ctx) {
+      Expression left = visit(ctx.expr(0));
+      Expression right = visit(ctx.expr(1));
+      return new BinOpExpr(Op.OR, left, right);
+  }
+
+  @Override
   public Expression visitMulDivMod(FeatherweightJavaScriptParser.MulDivModContext ctx) {
     Expression left = visit(ctx.expr(0));
     Expression right = visit(ctx.expr(1));

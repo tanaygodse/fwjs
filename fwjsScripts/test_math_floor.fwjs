@@ -1,0 +1,17 @@
+// TODO: Support for -ve numbers/unary minus
+// test_math_floor.fwjs
+
+// FWJS uses integer arithmetic, but this checks that 'floor' returns an IntVal properly:
+var x = Math.floor(25);
+print(x); // Expect: 25
+
+// Another check with a negative integer:
+var temp = 0 - 4;
+var y = Math.floor(temp);
+print(y); // Expect: -4
+
+// If you want to simulate dividing & flooring:
+var z = Math.floor(13 / 5);
+print(z); // Expect: 2 (if integer division is used, you might just get 2 anyway)
+
+

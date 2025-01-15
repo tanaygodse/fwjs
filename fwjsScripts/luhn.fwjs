@@ -1,0 +1,110 @@
+function getDigit(number){
+    if (number < 9){
+        number;  // implicitly returned
+    } else {
+        var left = Math.floor((number / 10));
+        var right = (number % 10);
+        var result = left + right;
+        result;
+    }
+}
+
+function getSize(d) {
+    var num = d.toString();
+    var lengthVal = num.length;
+    lengthVal;
+}
+
+function getPrefix(number,k) {
+    var sizeNumber = getSize(number);
+    if (sizeNumber > k) {
+        var num = number.toString();
+        var subStr = num.substring(0, k);
+        var parsed = parseInt(subStr);
+        parsed;
+    } else {
+        number;
+    }
+}
+
+function prefixMatched(number,d) {
+    var pref = getPrefix(number, getSize(d));
+    var eqVal = (pref == d);
+    eqVal;
+}
+
+function sumOfDoubleEvenPlace(number) {
+    var sum = 0;
+    var num = number.toString();
+    var i = getSize(number) - 2;
+    var digitChar = 0;
+    var doubledVal = 0;
+    var digit = 0;
+    while (i >= 0) {
+        digitChar = (num.charCodeAt(i)) - ("0".charCodeAt(0));
+        doubledVal = digitChar * 2;
+        digit = getDigit(doubledVal);
+        sum = sum + digit;
+        i = i - 2;
+    }
+    sum;
+}
+
+function sumOfOddPlace(number) {
+    var sum = 0;
+    var num = number.toString();
+    var i = getSize(number) - 1;
+    var digitChar = 0;
+    while (i >= 0) {
+        digitChar = (num.charCodeAt(i)) - ("0".charCodeAt(0));
+        sum = sum + digitChar;
+        i = i - 2;
+    }
+    sum;
+}
+
+function isValid(number) {
+    var sizeVal = getSize(number);
+
+    var cond1 = false;
+    if (sizeVal >= 13 && sizeVal <= 16) {
+        cond1 = true;
+    }
+    var cond21 = prefixMatched(number, 4);
+    var cond22 = prefixMatched(number, 5);
+    var cond23 = prefixMatched(number, 37);
+    var cond24 = prefixMatched(number, 6);
+    var cond2 = cond21 || cond22;
+    cond2 = cond2 || cond23;
+    cond2 = cond2 || cond24;
+    var doubleSum = sumOfDoubleEvenPlace(number);
+    var oddSum = sumOfOddPlace(number);
+
+    var cond3 = false;
+    var calc = ((doubleSum + oddSum) % 10);
+    if(calc == 0) {
+        cond3 = true;
+    }
+
+    var finalVal = false;
+    if (cond1 && cond2 && cond3) {
+        finalVal = true;
+    }
+    finalVal;
+}
+
+var number = parseInt("4417123456789113");
+//print("DEBUG top-level -- parseInt(...) => number =");
+print(number);
+//print("DEBUG top-level -- calling isValid(...) now:");
+print(isValid(number));
+
+// Test invalid cases
+//var invalidNumber = "4417123456789123";  // Invalid format with dashes
+//print(isValid(parseInt(invalidNumber)));
+
+function readAndValidate(filename){
+    var fileContent = (fileIO.readFile(filename));
+    print(fileContent);
+    print(isValid(parseInt(fileContent)));
+}

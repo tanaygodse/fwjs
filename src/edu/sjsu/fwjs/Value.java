@@ -95,28 +95,54 @@ class BoolVal implements Value {
     public String toString() {
         return Boolean.toString(boolVal);
     }
+
+    public Value getProperty(String prop) {
+        if ("toString".equals(prop)) {
+            return new NativeFunctionVal(args -> new StringVal(Boolean.toString(this.boolVal)));
+        }
+        return null;
+    }
 }
 
 /**
  * Integer values.
  */
 class IntVal implements Value {
-    private int i;
+    private long i;
 
-    public IntVal(int i) { this.i = i; }
+    public IntVal(long i) {
+        this.i = i;
+    }
 
-    public int toInt() { return this.i; }
+    public long toLong() {
+        return this.i;
+    }
+
+    public int toInt() {
+        return (int) this.i; 
+    }
 
     @Override
     public boolean equals(Object that) {
-        return that instanceof IntVal && this.i == ((IntVal) that).i;
+        if (that instanceof IntVal) {
+            return this.i == ((IntVal) that).toLong();
+        }
+        return false;
     }
 
     @Override
     public String toString() {
-        return Integer.toString(i);
+        return Long.toString(i);
+    }
+
+    public Value getProperty(String prop) {
+        if ("toString".equals(prop)) {
+            return new NativeFunctionVal(args -> new StringVal(Long.toString(this.i)));
+        }
+        return null;
     }
 }
+
 
 class NullVal implements Value {
     @Override
@@ -127,6 +153,13 @@ class NullVal implements Value {
     @Override
     public String toString() {
         return "null";
+    }
+
+    public Value getProperty(String prop) {
+        if ("toString".equals(prop)) {
+            return new NativeFunctionVal(args -> new StringVal("null"));
+        }
+        return null;
     }
 }
 /**
@@ -192,6 +225,42 @@ class StringVal implements Value {
 
     public StringVal(String s) {
         this.strVal = s;
+    }
+    
+    public Value getProperty(String prop) {
+        // Provide 'length'
+        if ("length".equals(prop)) {
+            return new IntVal(this.strVal.length());
+        }
+        // Provide 'charCodeAt'
+        if ("charCodeAt".equals(prop)) {
+            return new NativeFunctionVal(args -> {
+                if (args.size() != 1 || !(args.get(0) instanceof IntVal)) {
+                    throw new RuntimeException("charCodeAt() expects one integer argument");
+                }
+                int index = ((IntVal) args.get(0)).toInt();
+                if (index < 0 || index >= this.strVal.length()) {
+                    throw new RuntimeException("Index out of range for charCodeAt");
+                }
+                return new IntVal((int) this.strVal.charAt(index));
+            });
+        }
+        // Provide 'substring'
+        if ("substring".equals(prop)) {
+            return new NativeFunctionVal(args -> {
+                if (args.size() != 2 || !(args.get(0) instanceof IntVal) || !(args.get(1) instanceof IntVal)) {
+                    throw new RuntimeException("substring(...) expects two integer arguments");
+                }
+                int start = ((IntVal) args.get(0)).toInt();
+                int end = ((IntVal) args.get(1)).toInt();
+                if (start < 0 || end > this.strVal.length() || start > end) {
+                    throw new RuntimeException("Invalid substring range");
+                }
+                return new StringVal(this.strVal.substring(start, end));
+            });
+        }
+        // If none of the above, return null to indicate no such property
+        return null;
     }
 
     public int length() {
