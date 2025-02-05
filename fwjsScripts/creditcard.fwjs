@@ -1,8 +1,8 @@
-import "module3.fwjs";
+import "module3.fwjs" using networkIO, fileIO;
 
 function main() {
-    readAndPrintFile("dummy.txt") using networkIO, fileIO;
-    dummyCalculations(5, 10) using networkIO, fileIO;
+    readAndPrintFile("dummy.txt");
+    dummyCalculations(5, 10);
 }
 
 main();

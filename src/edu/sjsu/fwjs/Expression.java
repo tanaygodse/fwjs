@@ -324,17 +324,10 @@ class FunctionDeclExpr implements Expression {
 class FunctionAppExpr implements Expression {
     private Expression f;
     private List<Expression> args;
-    private List<String> capabilities;
 
-    public FunctionAppExpr(Expression f, List<Expression> args, List<String> capabilities) {
+    public FunctionAppExpr(Expression f, List<Expression> args) {
         this.f = f;
         this.args = args;
-        this.capabilities = capabilities;
-    }
-
-    // Existing constructor for backward compatibility
-    public FunctionAppExpr(Expression f, List<Expression> args) {
-        this(f, args, new ArrayList<>());
     }
 
     public Value evaluate(Environment env) {
@@ -342,32 +335,26 @@ class FunctionAppExpr implements Expression {
         Value maybeFunc = f.evaluate(env);
         if (maybeFunc instanceof ClosureVal) {
             ClosureVal func = (ClosureVal) maybeFunc;
-            Environment funcEnv = new Environment(func.isSandboxed() ? null : func.getOuterEnv());
-            // Add capabilities to the function environment
-            for (String capName : capabilities) {
-                Value capValue = env.resolveVar(capName);
-                funcEnv.createVar(capName, capValue);
-            }
+            // Always use the closure's outer environment so that sandboxed functions retain their capabilities
+            Environment funcEnv = new Environment(func.getOuterEnv());
+            
+            // Set up parseInt and Math in the function environment as before
             try {
                 funcEnv.resolveVar("parseInt");
-                // If we succeed, that means parseInt is already in the environment.
-                // So we can do `env.updateVar` or skip altogether:
                 funcEnv.updateVar("parseInt", new NativeFunctionVal(args1 -> {
-                if (args1.size() != 1 || !(args1.get(0) instanceof StringVal)) {
-                    throw new RuntimeException("parseInt expects a single string argument");
-                }
-                StringVal s = (StringVal) args1.get(0);
-                try {
-                    String trimmed = s.toString().trim();
-                    // Parse as long, store in the new IntVal constructor
-                    long val = Long.parseLong(trimmed);
-                    return new IntVal(val);
-                } catch (NumberFormatException e) {
-                    throw new RuntimeException("Invalid integer string for parseInt: " + s.toString());
-                }
+                    if (args1.size() != 1 || !(args1.get(0) instanceof StringVal)) {
+                        throw new RuntimeException("parseInt expects a single string argument");
+                    }
+                    StringVal s = (StringVal) args1.get(0);
+                    try {
+                        String trimmed = s.toString().trim();
+                        long val = Long.parseLong(trimmed);
+                        return new IntVal(val);
+                    } catch (NumberFormatException e) {
+                        throw new RuntimeException("Invalid integer string for parseInt: " + s.toString());
+                    }
                 }));
-            }catch (RuntimeException e) {
-                // If we fail the resolveVar, that means parseInt doesn't exist here yet.
+            } catch (RuntimeException e) {
                 funcEnv.createVar("parseInt", new NativeFunctionVal(args1 -> {
                     if (args1.size() != 1 || !(args1.get(0) instanceof StringVal)) {
                         throw new RuntimeException("parseInt expects a single string argument");
@@ -375,24 +362,22 @@ class FunctionAppExpr implements Expression {
                     StringVal s = (StringVal) args1.get(0);
                     try {
                         String trimmed = s.toString().trim();
-                        // Parse as long, store in the new IntVal constructor
                         long val = Long.parseLong(trimmed);
                         return new IntVal(val);
                     } catch (NumberFormatException e1) {
                         throw new RuntimeException("Invalid integer string for parseInt: " + s.toString());
                     }
-                    }));
+                }));
             }
             ObjectVal mathObj = new ObjectVal(null);
             mathObj.setProperty("floor", new NativeFunctionVal(args2 -> {
-                // For this interpreter, we assume integer division, so 'floor' is effectively a no-op 
                 if (args2.size() != 1 || !(args2.get(0) instanceof IntVal)) {
                     throw new RuntimeException("Math.floor(...) expects one integer argument");
                 }
                 int val = ((IntVal) args2.get(0)).toInt();
-                return new IntVal(val); // Already "floored" as int
+                return new IntVal(val);
             }));
-            try{
+            try {
                 funcEnv.resolveVar("Math");
                 funcEnv.updateVar("Math", mathObj);
             } catch (RuntimeException e) {
@@ -401,13 +386,13 @@ class FunctionAppExpr implements Expression {
             return func.apply(argvals, funcEnv);
         } else if (maybeFunc instanceof NativeFunctionVal) {
             NativeFunctionVal nativeFunc = (NativeFunctionVal) maybeFunc;
-            // Native functions can access capabilities via env
             return nativeFunc.apply(argvals);
         } else {
             throw new RuntimeException("The expression does not evaluate to a function and thus cannot be applied.");
         }
     }
 }
+
 
 
 
@@ -524,48 +509,88 @@ class ObjectCreateExpr implements Expression {
         return newObj;
     }
 }
+
 class ImportExpr implements Expression {
     private String fileName;
-    private String basePath; // New field to store base directory
+    private String basePath;
+    private List<String> capabilities;  // Capabilities requested on import
     private static Set<String> importedFiles = new HashSet<>();
 
+    public ImportExpr(String fileName, String basePath, List<String> capabilities) {
+         this.fileName = fileName;
+         this.basePath = basePath;
+         this.capabilities = capabilities;
+    }
+
+    // Backwards‐compatible constructor (no capabilities specified)
     public ImportExpr(String fileName, String basePath) {
-        this.fileName = fileName;
-        this.basePath = basePath;
+         this(fileName, basePath, new ArrayList<>());
     }
 
     @Override
     public Value evaluate(Environment env) {
-      if (importedFiles.contains(fileName)) {
-        // File has already been imported, skip to prevent circular import
-        return new NullVal();
-      }
-      importedFiles.add(fileName);
-      try {
-        String path = fileName;
-        if (!path.endsWith(".fwjs")) {
-            path += ".fwjs";
+        if (importedFiles.contains(fileName)) {
+            // File has already been imported, skip to prevent circular import
+            return new NullVal();
         }
-        // Construct the full path relative to basePath
-        File file = new File(basePath, path);
-        InputStream is = new FileInputStream(file);
-        ANTLRInputStream input = new ANTLRInputStream(is);
-        FeatherweightJavaScriptLexer lexer = new FeatherweightJavaScriptLexer(input);
-        CommonTokenStream tokens = new CommonTokenStream(lexer);
-        FeatherweightJavaScriptParser parser = new FeatherweightJavaScriptParser(tokens);
-        ParseTree tree = parser.prog();  // parse the imported file
-        
-        // Update the basePath for the imported file's directory
-        String newBasePath = file.getParent();
-        ExpressionBuilderVisitor builder = new ExpressionBuilderVisitor(newBasePath, true); // Set sandboxed to true
-        Expression prog = builder.visit(tree);
-        // Evaluate the imported file in the same environment
-        return prog.evaluate(env);
-      } catch (Exception e) {
-        throw new RuntimeException("Error importing file: " + fileName + ". Details: " + e.getMessage());
-      }
+        importedFiles.add(fileName);
+        try {
+            String path = fileName;
+            if (!path.endsWith(".fwjs")) {
+                path += ".fwjs";
+            }
+            // Construct the full path relative to basePath
+            File file = new File(basePath, path);
+            InputStream is = new FileInputStream(file);
+            ANTLRInputStream input = new ANTLRInputStream(is);
+            FeatherweightJavaScriptLexer lexer = new FeatherweightJavaScriptLexer(input);
+            CommonTokenStream tokens = new CommonTokenStream(lexer);
+            FeatherweightJavaScriptParser parser = new FeatherweightJavaScriptParser(tokens);
+            ParseTree tree = parser.prog();  // parse the imported file
+
+            // Update the basePath for the imported file's directory
+            String newBasePath = file.getParent();
+            ExpressionBuilderVisitor builder = new ExpressionBuilderVisitor(newBasePath, true); // sandboxed
+            Expression prog = builder.visit(tree);
+
+            // Create a new (sandboxed) environment for the imported file.
+            Environment importEnv = new Environment(null);
+
+            // Add only the requested capabilities from the current environment
+            for (String cap : capabilities) {
+                Value capValue = env.resolveVar(cap);
+                importEnv.createVar(cap, capValue);
+            }
+
+            // *** New: Always add built-in functions to the import environment ***
+            if (!importEnv.env.containsKey("parseInt")) {
+                importEnv.createVar("parseInt", env.resolveVar("parseInt"));
+            }
+            if (!importEnv.env.containsKey("Math")) {
+                importEnv.createVar("Math", env.resolveVar("Math"));
+            }
+
+            // Evaluate the imported program in its sandboxed environment
+            prog.evaluate(importEnv);
+
+            // Merge the definitions from the sandbox into the caller's environment.
+            mergeEnvironment(importEnv, env);
+
+            return new NullVal();
+        } catch (Exception e) {
+            throw new RuntimeException("Error importing file: " + fileName + ". Details: " + e.getMessage());
+        }
     }
 
+    // Helper method to merge definitions from source into target.
+    private void mergeEnvironment(Environment source, Environment target) {
+        for (Map.Entry<String, Value> entry : source.env.entrySet()) {
+             // Only add definitions that do not already exist in the target.
+             if (!target.env.containsKey(entry.getKey())) {
+                 target.env.put(entry.getKey(), entry.getValue());
+             }
+        }
+    }
 }
 
 

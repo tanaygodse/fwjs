@@ -93,11 +93,11 @@ function isValid(number) {
     finalVal;
 }
 
-var number = parseInt("4417123456789113");
+//var number = parseInt("4417123456789113");
 //print("DEBUG top-level -- parseInt(...) => number =");
-print(number);
+//print(number);
 //print("DEBUG top-level -- calling isValid(...) now:");
-print(isValid(number));
+//print(isValid(number));
 
 // Test invalid cases
 //var invalidNumber = "4417123456789123";  // Invalid format with dashes

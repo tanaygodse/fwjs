@@ -132,7 +132,7 @@ objectProperty:
     ;
 
 importStatement:
-    IMPORT str=STRING SEPARATOR
+    IMPORT str=STRING (capabilityClause)? SEPARATOR
     ;
 
 arglist: expr (COMMA expr)*;

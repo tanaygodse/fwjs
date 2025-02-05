@@ -1,8 +1,8 @@
 // capimport.fwjs
-import "module2.fwjs";
+import "module2.fwjs" using fileIO, networkIO;
 
 // Call foo using the capabilities
-y = foo() using fileIO, networkIO;
+y = foo();
 
 // Continue with your code
 print(8 + y);

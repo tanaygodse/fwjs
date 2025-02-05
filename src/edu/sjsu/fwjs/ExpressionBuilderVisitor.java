@@ -31,11 +31,14 @@ public class ExpressionBuilderVisitor extends FeatherweightJavaScriptBaseVisitor
     // Remove the quotes around the filename
     fileName = fileName.substring(1, fileName.length() - 1);
 
-    // Get the base directory from the current script
-    // Assuming we can access the base directory from the environment or a global variable
-    String basePath = currentBasePath; // You need to define how to get the current base path
-
-    return new ImportExpr(fileName, basePath);
+    String basePath = currentBasePath;
+    List<String> capabilities = new ArrayList<>();
+    if (ctx.importStatement().capabilityClause() != null) {
+        capabilities = ctx.importStatement().capabilityClause().capabilityList().IDENTIFIER().stream()
+                           .map(TerminalNode::getText)
+                           .collect(Collectors.toList());
+    }
+    return new ImportExpr(fileName, basePath, capabilities);
   }
   @Override
   public Expression visitProg(FeatherweightJavaScriptParser.ProgContext ctx) {
@@ -176,14 +179,7 @@ public class ExpressionBuilderVisitor extends FeatherweightJavaScriptBaseVisitor
     List<Expression> args = ctx.arglist() != null
             ? ctx.arglist().expr().stream().map(this::visit).collect(Collectors.toList())
             : Collections.emptyList();
-
-    // Handle capabilities
-    List<String> capabilities = new ArrayList<>();
-    if (ctx.capabilityClause() != null && ctx.capabilityClause().capabilityList() != null) {
-        capabilities = ctx.capabilityClause().capabilityList().IDENTIFIER().stream()
-                .map(TerminalNode::getText).collect(Collectors.toList());
-    }
-    return new FunctionAppExpr(functionExpr, args, capabilities);
+    return new FunctionAppExpr(functionExpr, args);
   }
 
   public Expression visitArglist(FeatherweightJavaScriptParser.ArglistContext ctx) {

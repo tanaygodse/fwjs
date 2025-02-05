@@ -1,7 +1,7 @@
-import "luhn.fwjs";
+import "luhn.fwjs" using fileIO;
 
 var filename1 = "cc.txt";
-readAndValidate(filename1) using fileIO;
+readAndValidate(filename1);
 
-var filename2 = "cc.txt";
-readAndValidate(filename2) using fileIO;
+var filename2 = "cc1.txt";
+readAndValidate(filename2);

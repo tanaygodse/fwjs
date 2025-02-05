@@ -529,54 +529,73 @@ public void testNetworkGetInvalidURL() throws IOException {
 
 
 // In ExpressionTest.java
-  @Test
-  public void testFunctionWithCapabilities() {
-    Environment env = new Environment();
-    Value fileIOCap = new FileIOCapability();
-    env.createVar("fileIO", fileIOCap);
-    Value networkIOCap = new NetworkIOCapability();
-    env.createVar("networkIO", networkIOCap);
-
-    // Define a sandboxed function that tries to access fileIO
-    List<String> params = new ArrayList<>();
-    Expression body = new FunctionAppExpr(
-        new GetPropertyExpr(new VarExpr("fileIO"), "writeFile"),
-        Arrays.asList(new ValueExpr(new StringVal("test.txt")), new ValueExpr(new StringVal("Hello World")))
-    );
-    ClosureVal funcVal = new ClosureVal(params, body, env, true); // Set isSandboxed to true
-    Expression funcExpr = new ValueExpr(funcVal);
-
-    // Call the function without passing capabilities
-    Expression funcCallNoCaps = new FunctionAppExpr(funcExpr, new ArrayList<>());
-
-    // Expect a RuntimeException because fileIO is not available in the function's environment
-    try {
-        funcCallNoCaps.evaluate(env);
-        fail("Expected RuntimeException due to missing capability");
-    } catch (RuntimeException e) {
-        // Expected exception
+@Test
+public void testFunctionWithCapabilities() {
+    // --- Test 1: Without fileIO capability ---
+    {
+        // Create an environment that does NOT have fileIO.
+        Environment envWithoutFileIO = new Environment();
+        
+        // Define a sandboxed function that uses fileIO.writeFile.
+        // Its outer environment is envWithoutFileIO (which lacks fileIO).
+        List<String> params = new ArrayList<>();
+        Expression body = new FunctionAppExpr(
+            new GetPropertyExpr(new VarExpr("fileIO"), "writeFile"),
+            Arrays.asList(
+                new ValueExpr(new StringVal("test.txt")),
+                new ValueExpr(new StringVal("Hello World"))
+            )
+        );
+        ClosureVal funcVal = new ClosureVal(params, body, envWithoutFileIO, true);
+        Expression funcExpr = new ValueExpr(funcVal);
+        
+        // When called, the function should throw a RuntimeException because fileIO is missing.
+        try {
+            new FunctionAppExpr(funcExpr, new ArrayList<>()).evaluate(envWithoutFileIO);
+            fail("Expected RuntimeException due to missing capability");
+        } catch (RuntimeException e) {
+            // Expected exception.
+        }
     }
-
-    // Call the function with the fileIO capability
-    Expression funcCallWithCaps = new FunctionAppExpr(funcExpr, new ArrayList<>(), Arrays.asList("fileIO"));
-
-    // Evaluate the function call
-    funcCallWithCaps.evaluate(env);
-
-    // Check that the file was written
-    String content = null;
-    try {
-        content = new String(Files.readAllBytes(Paths.get("test.txt")));
-    } catch (IOException e) {
-        fail("Failed to read written file");
+    
+    // --- Test 2: With fileIO capability ---
+    {
+        // Create an environment that DOES include fileIO.
+        Environment envWithFileIO = new Environment();
+        Value fileIOCap = new FileIOCapability();
+        envWithFileIO.createVar("fileIO", fileIOCap);
+        
+        // Define the same sandboxed function; now its outer environment (envWithFileIO)
+        // provides the fileIO capability.
+        List<String> params = new ArrayList<>();
+        Expression body = new FunctionAppExpr(
+            new GetPropertyExpr(new VarExpr("fileIO"), "writeFile"),
+            Arrays.asList(
+                new ValueExpr(new StringVal("test.txt")),
+                new ValueExpr(new StringVal("Hello World"))
+            )
+        );
+        ClosureVal funcVal = new ClosureVal(params, body, envWithFileIO, true);
+        Expression funcExpr = new ValueExpr(funcVal);
+        
+        // Call the function. Since fileIO is available in the outer environment, the call should succeed.
+        new FunctionAppExpr(funcExpr, new ArrayList<>()).evaluate(envWithFileIO);
+        
+        // Verify that the file was written with the expected content.
+        String content = null;
+        try {
+            content = new String(Files.readAllBytes(Paths.get("test.txt")));
+        } catch (IOException e) {
+            fail("Failed to read written file");
+        }
+        assertEquals("Hello World", content);
+        
+        // Clean up by deleting the file.
+        try {
+            Files.delete(Paths.get("test.txt"));
+        } catch (IOException e) {
+            // Ignore cleanup failures.
+        }
     }
-    assertEquals("Hello World", content);
-
-    // Clean up
-    try {
-        Files.delete(Paths.get("test.txt"));
-    } catch (IOException e) {
-        // Ignore
-    }
-  }
+}
 }
