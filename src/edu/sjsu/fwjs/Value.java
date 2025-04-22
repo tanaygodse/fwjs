@@ -3,6 +3,7 @@ package edu.sjsu.fwjs;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -431,3 +432,57 @@ class NetworkIOCapability extends ObjectVal {
     }
 }
 
+// Faux Capabilities
+class FakeFileIOCapability extends ObjectVal {
+    public FakeFileIOCapability() {
+        super(null);        // no prototype
+
+        /* -------- readFile(path)  -> ""  --------------------------- */
+        this.setProperty("readFile", new NativeFunctionVal(args -> {
+            // keep the same signature check as the real capability
+            if (args.size() != 1 || !(args.get(0) instanceof StringVal)) {
+                throw new RuntimeException("readFile expects a single string argument");
+            }
+            return new StringVal("");      // always returns empty content
+        }));
+
+        /* -------- writeFile(path, data)  -> null  ------------------ */
+        this.setProperty("writeFile", new NativeFunctionVal(args -> {
+            if (args.size() != 2
+                    || !(args.get(0) instanceof StringVal)
+                    || !(args.get(1) instanceof StringVal)) {
+                throw new RuntimeException("writeFile expects two string arguments");
+            }
+            /* swallow the call – no file is touched */
+            return new NullVal();
+        }));
+    }
+
+    @Override public String toString() { return "<fakeFileIO>"; }
+}
+
+class FakeNetworkIOCapability extends ObjectVal {
+    public FakeNetworkIOCapability() {
+        super(null);
+
+        /* -------- get(url)  -> "" ---------------------------------- */
+        this.setProperty("get", new NativeFunctionVal(args -> {
+            if (args.size() != 1 || !(args.get(0) instanceof StringVal)) {
+                throw new RuntimeException("get expects a single string argument");
+            }
+            return new StringVal("");          // no network traffic
+        }));
+
+        /* -------- post(url, body)  -> "" ---------------------------- */
+        this.setProperty("post", new NativeFunctionVal(args -> {
+            if (args.size() != 2
+                    || !(args.get(0) instanceof StringVal)
+                    || !(args.get(1) instanceof StringVal)) {
+                throw new RuntimeException("post expects two string arguments");
+            }
+            return new StringVal("");          // no network traffic
+        }));
+    }
+
+    @Override public String toString() { return "<fakeNetworkIO>"; }
+}

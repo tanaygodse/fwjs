@@ -1,0 +1,5 @@
+// test_alias_same.fwjs
+
+print("=== HOST: about to import with same-as aliases ===");
+import "lib.fwjs" using fakeFileIO as fileIO, fakeNetworkIO as networkIO;
+print("=== HOST: back from import ===");

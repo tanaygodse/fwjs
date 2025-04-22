@@ -16,7 +16,7 @@ SCRIPT_CLOSURE = closure.fwjs
 SCRIPT_OBJECT = objects.fwjs
 SCRIPT_CAP = capimport.fwjs
 SCRIPT_CARD = import_luhn.fwjs
-TEST_NEW = test_math_floor.fwjs test_parseInt.fwjs test_string_methods.fwjs test_toString.fwjs test_while_loop.fwjs closure.fwjs
+TEST_NEW = test_fc2.fwjs
 TREES_DIR=parseTrees
 # Choosing build instead of bin to avoid conflicts with Eclipse
 BUILD_DIR=build

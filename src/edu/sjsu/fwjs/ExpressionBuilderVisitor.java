@@ -25,21 +25,35 @@ public class ExpressionBuilderVisitor extends FeatherweightJavaScriptBaseVisitor
     public ExpressionBuilderVisitor(String basePath) {
         this(basePath, false);
     }
-  @Override
-  public Expression visitImportExpr(FeatherweightJavaScriptParser.ImportExprContext ctx) {
-    String fileName = ctx.importStatement().str.getText();
-    // Remove the quotes around the filename
-    fileName = fileName.substring(1, fileName.length() - 1);
+    @Override
+    public Expression visitImportExpr(
+            FeatherweightJavaScriptParser.ImportExprContext ctx) {
 
-    String basePath = currentBasePath;
-    List<String> capabilities = new ArrayList<>();
-    if (ctx.importStatement().capabilityClause() != null) {
-        capabilities = ctx.importStatement().capabilityClause().capabilityList().IDENTIFIER().stream()
-                           .map(TerminalNode::getText)
-                           .collect(Collectors.toList());
+        String fileName = ctx.importStatement().str.getText();
+        fileName = fileName.substring(1, fileName.length() - 1);   // strip quotes
+        String basePath = currentBasePath;
+
+        Map<String,String> caps = new HashMap<>();
+
+        if (ctx.importStatement().capabilityClause() != null) {
+            for (FeatherweightJavaScriptParser.CapabilityBindingContext b :
+                    ctx.importStatement().capabilityClause()
+                                        .capabilityBindings()
+                                        .capabilityBinding()) {
+
+                /*  Grammar:  FIRST  AS  SECOND
+                *           fakeIO as fileIO
+                *  Host has the FIRST, imported file wants the SECOND          */
+                String realName  = b.IDENTIFIER(0).getText();
+                String aliasName = (b.IDENTIFIER().size() == 2)
+                                    ? b.IDENTIFIER(1).getText()
+                                    : realName;               // no “as”: same name
+                caps.put(aliasName, realName);                 // alias → real
+            }
+        }
+        return new ImportExpr(fileName, basePath, caps);
     }
-    return new ImportExpr(fileName, basePath, capabilities);
-  }
+    
   @Override
   public Expression visitProg(FeatherweightJavaScriptParser.ProgContext ctx) {
     List<Expression> stmts = new ArrayList<Expression>();

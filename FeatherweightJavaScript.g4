@@ -13,6 +13,7 @@ NEW: 'new';
 IMPORT: 'import';
 USING: 'using';
 RETURN: 'return';
+AS: 'as';
 
 // Literals
 INT: [1-9][0-9]* | '0';
@@ -115,9 +116,11 @@ returnStatement:
     ;
 
 
-capabilityClause: USING capabilityList;
+capabilityClause: USING capabilityBindings;
 
-capabilityList: IDENTIFIER (COMMA IDENTIFIER)*;
+capabilityBindings: capabilityBinding (COMMA capabilityBinding)*;
+
+capabilityBinding : IDENTIFIER (AS IDENTIFIER)?;
 
 objectLiteral:
     LBRACE objectPropertyList? RBRACE

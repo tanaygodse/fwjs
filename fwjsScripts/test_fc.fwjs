@@ -1,0 +1,10 @@
+// test_fc.fwjs
+//print("=== HOST: real fileIO.readFile ===");
+//print("Length of this script = ");
+//print(fileIO.readFile("./fwjsScripts/test_fc.fwjs"));
+
+//import "lib.fwjs" using fileIO, networkIO;
+print("\n=== HOST: back from real import ===");
+
+import "lib.fwjs" using fileIO as fileIO, networkIO as networkIO;
+print("\n=== HOST: back from fake import ===");

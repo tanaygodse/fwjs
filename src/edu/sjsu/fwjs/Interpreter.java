@@ -54,6 +54,10 @@ public class Interpreter {
         globalEnv.createVar("fileIO", fileIOCap);
         Value networkIOCap = new NetworkIOCapability();
         globalEnv.createVar("networkIO", networkIOCap);
+        Value fakeFileIOCap  = new FakeFileIOCapability();
+        globalEnv.createVar("fakeFileIO", fakeFileIOCap);
+        Value fakeNetworkIOCap     = new FakeNetworkIOCapability();
+        globalEnv.createVar("fakeNetworkIO", fakeNetworkIOCap);
         // Create a 'Math' object with a 'floor' method (no floating-point, but sim for integer)
         ObjectVal mathObj = new ObjectVal(null);
         mathObj.setProperty("floor", new NativeFunctionVal(args2 -> {

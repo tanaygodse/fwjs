@@ -1,0 +1,13 @@
+// lib2.fwjs
+
+print("\n--- inside lib.fwjs ---");
+
+// read a small local file so you see real contents
+var snippet = fileIO.readFile("lib.fwjs");
+print("first 3 chars of lib.fwjs = " + snippet.substring(0, 3));
+
+// do a quick network hit
+var body = networkIO.get("https://example.com");
+print("networkIO.get() starts with: " + body.substring(0, 15));
+
+print("--- leaving lib.fwjs ---\n");

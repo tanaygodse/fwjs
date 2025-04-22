@@ -238,18 +238,10 @@ class VarDeclExpr implements Expression {
 		this.exp = exp;
 	}
 	public Value evaluate(Environment env) {
-		Value v = new NullVal();
-		if(exp == null) {
-			env.createVar(varName, v);
-		}	
-		try {
-			v = exp.evaluate(env);
-		}catch(RuntimeException e) {
-			System.out.print(e.toString());
-		}
-		env.createVar(varName, v);
-		return v;
-	}
+        Value v = (exp == null) ? new NullVal() : exp.evaluate(env);
+        env.createVar(varName, v);
+        return v;
+    }
 }
 
 /**
@@ -511,20 +503,15 @@ class ObjectCreateExpr implements Expression {
 }
 
 class ImportExpr implements Expression {
-    private String fileName;
-    private String basePath;
-    private List<String> capabilities;  // Capabilities requested on import
-    private static Set<String> importedFiles = new HashSet<>();
+    private static final Set<String> importedFiles = new HashSet<>();
+    private final String fileName;
+    private final String basePath;
+    private final Map<String,String> caps;
 
-    public ImportExpr(String fileName, String basePath, List<String> capabilities) {
-         this.fileName = fileName;
-         this.basePath = basePath;
-         this.capabilities = capabilities;
-    }
-
-    // Backwards‐compatible constructor (no capabilities specified)
-    public ImportExpr(String fileName, String basePath) {
-         this(fileName, basePath, new ArrayList<>());
+    public ImportExpr(String fileName, String basePath, Map<String,String> caps) {
+        this.fileName = fileName;
+        this.basePath = basePath;
+        this.caps     = caps;
     }
 
     @Override
@@ -557,9 +544,12 @@ class ImportExpr implements Expression {
             Environment importEnv = new Environment(null);
 
             // Add only the requested capabilities from the current environment
-            for (String cap : capabilities) {
-                Value capValue = env.resolveVar(cap);
-                importEnv.createVar(cap, capValue);
+            for (Map.Entry<String,String> entry : caps.entrySet()) {
+                String alias   = entry.getKey();   // what the imported file sees
+                String capName = entry.getValue(); // real name in the host env
+                Value realCap  = env.resolveVar(capName);
+
+                importEnv.createVar(alias, realCap);
             }
 
             // *** New: Always add built-in functions to the import environment ***
