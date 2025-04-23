@@ -1,0 +1,9 @@
+// test_fc.fwjs
+
+print("=== HOST: about to import with REAL capabilities ===");
+//import "lib.fwjs" using fileIO, networkIO;
+print("=== HOST: back from REAL import ===\n");
+
+print("=== HOST: about to import with FAKE capabilities ===");
+import "lib.fwjs" using logFileIO as fileIO, logNetworkIO as networkIO;
+print("=== HOST: back from FAKE import ===");

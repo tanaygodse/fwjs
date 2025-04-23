@@ -3,10 +3,12 @@ package edu.sjsu.fwjs;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
 import java.util.function.Function;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -486,3 +488,145 @@ class FakeNetworkIOCapability extends ObjectVal {
 
     @Override public String toString() { return "<fakeNetworkIO>"; }
 }
+
+class LogFileIOCapability extends ObjectVal {
+    private static final Path LOG = Paths.get("file_activity.log");
+
+    public LogFileIOCapability() {
+        super(null);
+
+        // readFile
+        this.setProperty("readFile", new NativeFunctionVal(args -> {
+            if (args.size() != 1 || !(args.get(0) instanceof StringVal)) {
+                throw new RuntimeException("readFile expects a single string argument");
+            }
+            String path = ((StringVal) args.get(0)).toString();
+            log("readFile", path);
+            try {
+                String content = new String(Files.readAllBytes(Paths.get(path)));
+                return new StringVal(content);
+            } catch (IOException e) {
+                throw new RuntimeException("Error reading file: " + e.getMessage());
+            }
+        }));
+
+        // writeFile
+        this.setProperty("writeFile", new NativeFunctionVal(args -> {
+            if (args.size() != 2
+                    || !(args.get(0) instanceof StringVal)
+                    || !(args.get(1) instanceof StringVal)) {
+                throw new RuntimeException("writeFile expects two string arguments");
+            }
+            String path    = ((StringVal) args.get(0)).toString();
+            String content = ((StringVal) args.get(1)).toString();
+            log("writeFile", path + " ← " + content);
+            try {
+                Files.write(Paths.get(path), content.getBytes());
+                return new NullVal();
+            } catch (IOException e) {
+                throw new RuntimeException("Error writing file: " + e.getMessage());
+            }
+        }));
+    }
+
+    private void log(String method, String detail) {
+        String line = method + ": " + detail;
+        try {
+            Files.write(LOG,
+                        Arrays.asList(line),
+                        StandardOpenOption.CREATE,
+                        StandardOpenOption.APPEND);
+        } catch (IOException e) {
+            // if logging fails, we swallow the error so we don't break the capability
+        }
+    }
+
+    @Override public String toString() { return "<logFileIO>"; }
+}
+
+//
+// LoggingNetworkIOCapability
+//
+class LogNetworkIOCapability extends ObjectVal {
+    private static final Path LOG = Paths.get("network_activity.log");
+
+    public LogNetworkIOCapability() {
+        super(null);
+
+        // get
+        this.setProperty("get", new NativeFunctionVal(args -> {
+            if (args.size() != 1 || !(args.get(0) instanceof StringVal)) {
+                throw new RuntimeException("get expects a single string argument");
+            }
+            String url = ((StringVal) args.get(0)).toString();
+            log("get", url);
+            try {
+                URL u = new URL(url);
+                HttpURLConnection conn = (HttpURLConnection)u.openConnection();
+                conn.setRequestMethod("GET");
+                conn.setDoInput(true);
+                int code = conn.getResponseCode();
+                InputStream in = code>=200&&code<300 ? conn.getInputStream() : conn.getErrorStream();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while((line = reader.readLine())!=null) {
+                    sb.append(line).append("\n");
+                }
+                reader.close();
+                return new StringVal(sb.toString());
+            } catch (IOException e) {
+                throw new RuntimeException("Error performing GET: " + e.getMessage());
+            }
+        }));
+
+        // post
+        this.setProperty("post", new NativeFunctionVal(args -> {
+            if (args.size() != 2
+                    || !(args.get(0) instanceof StringVal)
+                    || !(args.get(1) instanceof StringVal)) {
+                throw new RuntimeException("post expects two string arguments");
+            }
+            String url  = ((StringVal) args.get(0)).toString();
+            String body = ((StringVal) args.get(1)).toString();
+            log("post", url + " ← " + body);
+            try {
+                URL u = new URL(url);
+                HttpURLConnection conn = (HttpURLConnection)u.openConnection();
+                conn.setRequestMethod("POST");
+                conn.setDoOutput(true);
+                conn.setRequestProperty("Content-Type","application/json");
+                try(OutputStream os = conn.getOutputStream()) {
+                    os.write(body.getBytes("UTF-8"));
+                }
+                int code = conn.getResponseCode();
+                InputStream in = code>=200&&code<300 ? conn.getInputStream() : conn.getErrorStream();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while((line = reader.readLine())!=null) {
+                    sb.append(line).append("\n");
+                }
+                reader.close();
+                return new StringVal(sb.toString());
+            } catch (IOException e) {
+                throw new RuntimeException("Error performing POST: " + e.getMessage());
+            }
+        }));
+    }
+
+    private void log(String method, String detail) {
+        String line = method + ": " + detail;
+        try {
+            Files.write(LOG,
+                        Arrays.asList(line),
+                        StandardOpenOption.CREATE,
+                        StandardOpenOption.APPEND);
+        } catch (IOException e) {
+            // swallow
+        }
+    }
+
+    @Override public String toString() { return "<logNetworkIO>"; }
+}
+

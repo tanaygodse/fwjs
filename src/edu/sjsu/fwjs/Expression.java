@@ -544,13 +544,13 @@ class ImportExpr implements Expression {
             Environment importEnv = new Environment(null);
 
             // Add only the requested capabilities from the current environment
-            for (Map.Entry<String,String> entry : caps.entrySet()) {
-                String alias   = entry.getKey();   // what the imported file sees
-                String capName = entry.getValue(); // real name in the host env
-                Value realCap  = env.resolveVar(capName);
-
-                importEnv.createVar(alias, realCap);
+            for (java.util.Map.Entry<String,String> e : caps.entrySet()) {
+                String alias    = e.getKey();
+                String realName = e.getValue();
+                Value cap       = env.resolveVar(realName);
+                importEnv.createVar(alias, cap);
             }
+            
 
             // *** New: Always add built-in functions to the import environment ***
             if (!importEnv.env.containsKey("parseInt")) {
@@ -603,20 +603,21 @@ class MethodCallExpr implements Expression {
         ObjectVal obj = (ObjectVal) objVal;
 
         Value methodVal = obj.getProperty(methodName);
-        if (!(methodVal instanceof ClosureVal)) {
+        if (methodVal instanceof ClosureVal) {
+            ClosureVal method = (ClosureVal) methodVal;
+            List<Value> argVals = args.stream().map(a -> a.evaluate(env)).collect(Collectors.toList());
+            Environment methodEnv = new Environment(method.getOuterEnv());
+            methodEnv.createVar("this", obj);
+            return method.apply(argVals, methodEnv);
+
+        } else if (methodVal instanceof NativeFunctionVal) {
+            NativeFunctionVal nativeFunc = (NativeFunctionVal) methodVal;
+            List<Value> argVals = args.stream().map(a -> a.evaluate(env)).collect(Collectors.toList());
+            return nativeFunc.apply(argVals);
+
+        } else {
             throw new RuntimeException("Property " + methodName + " is not a function.");
         }
-        ClosureVal method = (ClosureVal) methodVal;
-
-        // Evaluate arguments
-        List<Value> argVals = args.stream().map(arg -> arg.evaluate(env)).collect(Collectors.toList());
-
-        // Create a new environment with 'this' bound to the object
-        Environment methodEnv = new Environment(method.getOuterEnv());
-        methodEnv.createVar("this", obj);
-
-        // Call the method
-        return method.apply(argVals, methodEnv);
     }
 
 }

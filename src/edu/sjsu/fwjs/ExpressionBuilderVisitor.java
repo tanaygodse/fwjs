@@ -27,7 +27,7 @@ public class ExpressionBuilderVisitor extends FeatherweightJavaScriptBaseVisitor
     }
     @Override
     public Expression visitImportExpr(
-            FeatherweightJavaScriptParser.ImportExprContext ctx) {
+      FeatherweightJavaScriptParser.ImportExprContext ctx) {
 
         String fileName = ctx.importStatement().str.getText();
         fileName = fileName.substring(1, fileName.length() - 1);   // strip quotes
@@ -37,18 +37,14 @@ public class ExpressionBuilderVisitor extends FeatherweightJavaScriptBaseVisitor
 
         if (ctx.importStatement().capabilityClause() != null) {
             for (FeatherweightJavaScriptParser.CapabilityBindingContext b :
-                    ctx.importStatement().capabilityClause()
-                                        .capabilityBindings()
-                                        .capabilityBinding()) {
-
-                /*  Grammar:  FIRST  AS  SECOND
-                *           fakeIO as fileIO
-                *  Host has the FIRST, imported file wants the SECOND          */
-                String realName  = b.IDENTIFIER(0).getText();
-                String aliasName = (b.IDENTIFIER().size() == 2)
-                                    ? b.IDENTIFIER(1).getText()
-                                    : realName;               // no “as”: same name
-                caps.put(aliasName, realName);                 // alias → real
+              ctx.importStatement().capabilityClause()
+                                  .capabilityBindings()
+                                  .capabilityBinding()) {
+              String realName  = b.IDENTIFIER(0).getText();              
+              String aliasName = (b.IDENTIFIER().size()==2)
+                                      ? b.IDENTIFIER(1).getText()
+                                      : realName;
+              caps.put(aliasName, realName);
             }
         }
         return new ImportExpr(fileName, basePath, caps);

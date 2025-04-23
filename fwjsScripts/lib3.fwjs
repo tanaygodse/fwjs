@@ -1,0 +1,14 @@
+// lib.fwjs
+print("\n--- inside lib.fwjs ---");
+
+// 1) read an existing file so no exception is thrown
+var txt = fileIO.readFile("lib.fwjs");
+print("fileIO.readFile('dummy.txt') →");
+print(txt);
+
+// 2) fetch something via networkIO
+var html = (networkIO.get("https://example.com"));
+print("networkIO.get() →");
+print(html);
+
+print("--- leaving lib.fwjs ---\n");

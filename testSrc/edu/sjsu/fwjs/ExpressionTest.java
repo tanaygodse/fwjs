@@ -424,7 +424,7 @@ public void testFileWriteWithoutCapability() throws IOException {
 @Test
 public void testNetworkGet() throws IOException {
     // Mock URL for the GET request
-    String mockUrl = "http://httpbin.org/get";
+    String mockUrl = "https://httpbin.org/get";
 
     // Create an environment and add the NetworkIOCapability
     Environment env = new Environment();
@@ -453,7 +453,7 @@ public void testNetworkGet() throws IOException {
 @Test
 public void testNetworkPost() throws IOException {
     // Mock URL and request data for the POST request
-    String mockUrl = "http://httpbin.org/post";
+    String mockUrl = "https://httpbin.org/post";
     String postData = "{\"name\":\"John\", \"age\":30}"; // Example JSON data
 
     // Create an environment and add the NetworkIOCapability
