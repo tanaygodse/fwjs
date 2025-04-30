@@ -84,73 +84,75 @@ class BinOpExpr implements Expression {
 		this.exprs.add(e2);
 	}
 
-	@SuppressWarnings("incomplete-switch")
-public Value evaluate(Environment env) {
-    List<Value> vs = this.exprs.stream().map(x -> x.evaluate(env)).collect(Collectors.toList());
-    Boolean nullFlag = vs.stream().anyMatch(x -> (x == null));
-    Boolean closureFlag = vs.stream().anyMatch(x -> (x instanceof ClosureVal));
+    @SuppressWarnings("incomplete-switch")
+    public Value evaluate(Environment env) {
+        List<Value> vs = exprs.stream()
+                               .map(e -> e.evaluate(env))
+                               .collect(Collectors.toList());
 
-    // Convert values to long
-    List<Long> vals = vs.stream().map(
-        x -> {
+        // Short-circuit string concatenation for ADD
+        if (op == Op.ADD &&
+            (vs.get(0) instanceof StringVal || vs.get(1) instanceof StringVal)) {
+            String s1 = vs.get(0).toString();
+            String s2 = vs.get(1).toString();
+            return new StringVal(s1 + s2);
+        }
+
+        // Determine numeric values
+        List<Long> vals = vs.stream().map(x -> {
             if (x instanceof BoolVal)
                 return ((BoolVal)x).toBoolean() ? 1L : 0L;
             else if (x instanceof NullVal)
                 return 0L;
             else if (x instanceof ClosureVal)
-                return -1L; // Handle closureFlag above
-            return ((IntVal)x).toLong(); // Now uses toLong() for compatibility
-        }
-    ).collect(Collectors.toList());
-    long x = vals.get(0);
-    long y = vals.get(1);
+                return -1L;
+            return ((IntVal)x).toLong();
+        }).collect(Collectors.toList());
+        long x = vals.get(0), y = vals.get(1);
 
-    if (nullFlag || closureFlag) {
-        if (op.equals(Op.EQ)) {
-            return new BoolVal(vs.get(0).equals(vs.get(1)));
-        } else if (!nullFlag) {
-            throw new RuntimeException("Tried to perform arithmetic or numeric comparison with a closure.");
-        }
-    }
+        boolean nullFlag = vs.stream().anyMatch(v -> v == null);
+        boolean closureFlag = vs.stream().anyMatch(v -> v instanceof ClosureVal);
 
-    // Perform operations on long values
-    switch (op) {
-        case AND:
-            return new BoolVal((x != 0) && (y != 0));
-        case OR:
-            return new BoolVal((x != 0) || (y != 0));
-        case ADD:
-            if (vs.get(0) instanceof StringVal || vs.get(1) instanceof StringVal) {
-                String s1 = vs.get(0).toString();
-                String s2 = vs.get(1).toString();
-                return new StringVal(s1 + s2);
-            } else {
+        // Handle null/closure for EQ only
+        if (nullFlag || closureFlag) {
+            if (op == Op.EQ)
+                return new BoolVal(vs.get(0).equals(vs.get(1)));
+            else if (!nullFlag)
+                throw new RuntimeException("Tried numeric operation on a closure.");
+        }
+
+        // Arithmetic and comparisons
+        switch (op) {
+            case ADD:
                 return new IntVal(x + y);
-            }
-        case SUBTRACT:
-            return new IntVal(x - y);
-        case MULTIPLY:
-            return new IntVal(x * y);
-        case DIVIDE:
-            return new IntVal(x / y); // Ensure no division by zero elsewhere
-        case MOD:
-            return new IntVal(x % y);
-        case GT:
-            return new BoolVal(x > y);
-        case GE:
-            return new BoolVal(x >= y);
-        case LT:
-            return new BoolVal(x < y);
-        case LE:
-            return new BoolVal(x <= y);
-        case EQ:
-            return new BoolVal(x == y);
-        case NE:
-            return new BoolVal(x != y);
-        default:
-            return new NullVal(); // Unsupported operation
+            case SUBTRACT:
+                return new IntVal(x - y);
+            case MULTIPLY:
+                return new IntVal(x * y);
+            case DIVIDE:
+                return new IntVal(x / y);
+            case MOD:
+                return new IntVal(x % y);
+            case GT:
+                return new BoolVal(x > y);
+            case GE:
+                return new BoolVal(x >= y);
+            case LT:
+                return new BoolVal(x < y);
+            case LE:
+                return new BoolVal(x <= y);
+            case EQ:
+                return new BoolVal(x == y);
+            case NE:
+                return new BoolVal(x != y);
+            case AND:
+                return new BoolVal((x != 0) && (y != 0));
+            case OR:
+                return new BoolVal((x != 0) || (y != 0));
+            default:
+                return new NullVal();
+        }
     }
-}
 }
 
 /**

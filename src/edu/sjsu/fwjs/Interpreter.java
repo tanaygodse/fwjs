@@ -61,7 +61,13 @@ public class Interpreter {
         Value logFileIOCap = new LogFileIOCapability();
         globalEnv.createVar("logFileIO", logFileIOCap);
         Value logNetworkIOCap = new LogNetworkIOCapability();
-        globalEnv.createVar("logNetworkIO", logFileIOCap);
+        globalEnv.createVar("logNetworkIO", logNetworkIOCap);
+        Value cryptoIOCap = new CryptoIOCapability();
+        globalEnv.createVar("cryptoIO", cryptoIOCap);
+        Value fakeCryptoIOCap = new FakeCryptoIOCapability();
+        globalEnv.createVar("fakeCryptoIO", fakeCryptoIOCap);
+        Value logCryptoIOCap = new LogCryptoIOCapability();
+        globalEnv.createVar("logCryptoIO", logCryptoIOCap);
         // Create a 'Math' object with a 'floor' method (no floating-point, but sim for integer)
         ObjectVal mathObj = new ObjectVal(null);
         mathObj.setProperty("floor", new NativeFunctionVal(args2 -> {

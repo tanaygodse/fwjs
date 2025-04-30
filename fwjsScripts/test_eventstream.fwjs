@@ -1,0 +1,17 @@
+print("=== MAIN: Starting transfer example ===");
+
+import "eventstream.fwjs" using logCryptoIO as cryptoIO;
+
+function appHandler(data) {
+    print("[APP] Transfer event received: " + data);
+}
+
+onTransfer(appHandler);
+
+var demoTx = "010203abcdef";
+print("=== MAIN: Emitting transfer event with txHex: " + demoTx);
+emitTransfer(demoTx);
+
+offTransfer(appHandler);
+
+print("=== MAIN: Finished example ===");

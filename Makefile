@@ -10,13 +10,14 @@ TEST_CLASSPATH=${JUNIT_JAR}:${HAMCREST_JAR}:${ANTLR_JAR}
 FWJS_SCRIPT_DIR=fwjsScripts
 SCRIPTS=closure.fwjs examples.fwjs functions.fwjs operators.fwjs test.fwjs \
 				controlStructs.fwjs factorial.fwjs lists.fwjs scoping.fwjs while.fwjs \
-				print.fwjs prototype.fwjs objects.fwjs test_proto.fwjs fileio.fwjs import.fwjs
+				print.fwjs prototype.fwjs objects.fwjs test_proto.fwjs fileio.fwjs import.fwjs \
+				test_fc3.fwjs test_eventstream.fwjs
 SCRIPT_PROTO = prototype.fwjs
 SCRIPT_CLOSURE = closure.fwjs 
 SCRIPT_OBJECT = objects.fwjs
 SCRIPT_CAP = capimport.fwjs
 SCRIPT_CARD = import_luhn.fwjs
-TEST_NEW = test_fc3.fwjs
+TEST_NEW = test_eventstream.fwjs
 TREES_DIR=parseTrees
 # Choosing build instead of bin to avoid conflicts with Eclipse
 BUILD_DIR=build

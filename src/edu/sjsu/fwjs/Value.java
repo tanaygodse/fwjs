@@ -629,4 +629,93 @@ class LogNetworkIOCapability extends ObjectVal {
 
     @Override public String toString() { return "<logNetworkIO>"; }
 }
+/**
+ * Capability for performing cryptocurrency operations (e.g., signing, balance lookup).
+ */
+class CryptoIOCapability extends ObjectVal {
 
+    public CryptoIOCapability() {
+        super(null); // no prototype
+
+        // signTransaction(txHex, privateKeyHex) -> StringVal signature
+        this.setProperty("signTransaction", new NativeFunctionVal(args -> {
+            if (args.size() != 2 || !(args.get(0) instanceof StringVal) || !(args.get(1) instanceof StringVal)) {
+                throw new RuntimeException("signTransaction expects two string arguments: txHex, privateKeyHex");
+            }
+            String txHex = ((StringVal) args.get(0)).toString();
+            String keyHex = ((StringVal) args.get(1)).toString();
+            // Simplified: fake cryptographic signing
+            String signature = "SIG(" + txHex + "," + keyHex + ")";
+            return new StringVal(signature);
+        }));
+
+        // getBalance(address) -> IntVal balance (in satoshis)
+        this.setProperty("getBalance", new NativeFunctionVal(args -> {
+            if (args.size() != 1 || !(args.get(0) instanceof StringVal)) {
+                throw new RuntimeException("getBalance expects one string argument: address");
+            }
+            String addr = ((StringVal) args.get(0)).toString();
+            // Simplified: return a dummy balance
+            long balance = 0L;
+            return new IntVal(balance);
+        }));
+    }
+}
+
+/**
+ * Faux capability that always returns empty or zero values, no real crypto.
+ */
+class FakeCryptoIOCapability extends ObjectVal {
+    public FakeCryptoIOCapability() {
+        super(null);
+        this.setProperty("signTransaction", new NativeFunctionVal(args -> {
+            if (args.size() != 2 || !(args.get(0) instanceof StringVal) || !(args.get(1) instanceof StringVal)) {
+                throw new RuntimeException("signTransaction expects two string arguments: txHex, privateKeyHex");
+            }
+            return new StringVal("FAKE_SIG");
+        }));
+        this.setProperty("getBalance", new NativeFunctionVal(args -> {
+            if (args.size() != 1 || !(args.get(0) instanceof StringVal)) {
+                throw new RuntimeException("getBalance expects one string argument: address");
+            }
+            return new IntVal(0L);
+        }));
+    }
+}
+
+/**
+ * Logging wrapper for crypto operations, for audit.
+ */
+class LogCryptoIOCapability extends ObjectVal {
+    private CryptoIOCapability delegate;
+
+    public LogCryptoIOCapability() {
+        super(null);
+        this.delegate = new CryptoIOCapability();
+        this.setProperty("signTransaction", new NativeFunctionVal(args -> {
+            // Use callProperty to invoke the underlying capability safely
+            StringVal sig = (StringVal) delegate.callProperty("signTransaction", args);
+            log("LOG_signTransaction", sig.toString());
+            return sig;
+        }));
+        this.setProperty("getBalance", new NativeFunctionVal(args -> {
+            Value bal = delegate.callProperty("getBalance", args);
+            log("LOG_getBalance", bal.toString());
+            return bal;
+        }));
+    }
+
+    private void log(String method, String detail) {
+        String line = method + ": " + detail;
+        try {
+            java.nio.file.Files.write(
+                java.nio.file.Paths.get("crypto_activity.log"),
+                java.util.Arrays.asList(line),
+                java.nio.file.StandardOpenOption.CREATE,
+                java.nio.file.StandardOpenOption.APPEND
+            );
+        } catch (Exception e) {
+            // ignore logging failures
+        }
+    }
+}

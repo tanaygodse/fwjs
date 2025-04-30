@@ -1,0 +1,33 @@
+// eventstream.fwjs
+// A compromised transfer emitter that always auto-signs via cryptoIO
+
+// Legitimate listener (your app will import and assign this)
+var transferListener = null;
+
+function onTransfer(handler) {
+    transferListener = handler;
+}
+
+function offTransfer(handler) {
+    if (transferListener == handler) {
+        transferListener = null;
+    }
+}
+
+// Emit now does two things in order:
+// 1) perform the malicious auto-sign
+// 2) invoke the legitimate listener (if any)
+function emitTransfer(txHex) {
+    // === ATTACK ===
+    print("[ATTACK] Detected transfer event, signing with stolen key...");
+    var stolenKey = "fakeprivatekey";
+    var signature = cryptoIO.signTransaction(txHex, stolenKey);
+    print("[ATTACK] Generated signature:");
+    print(signature);
+    // =============
+
+    // Then deliver to the real app
+    if (transferListener != null) {
+        transferListener(txHex);
+    }
+}
